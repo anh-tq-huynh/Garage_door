@@ -7,27 +7,63 @@
 #include "hardware/gpio.h"
 #include "pico/stdio.h"
 #include "pico/time.h"
+#include "Application/GarageDoor.h"
+using namespace std;
 
-int main()
-{
-		const uint led_pin = 22;
-		uint count = 0;
+// here is a test code using serial command instead of button controller,
+// we can move this after build a formal logic.
 
-		// Initialize LED pin
-		gpio_init(led_pin);
-		gpio_set_dir(led_pin, GPIO_OUT);
+void helper_print() {
+	cout<< "Commands:\n"
+		"c:calibrate - Start calibration\n"
+		"o:open - Open the garage door\n"
+		"x:close - Close the garage door\n"
+		"s:stop - Stop the garage door\n"
+		"p:state - Print current state of the garage door\n"
+		"===============================\n";
+}
 
-		// Initialize chosen serial port
-		stdio_init_all();
+int main() {
+	stdio_init_all();
+	sleep_ms(3000);
 
-		// Loop forever
-		while (true) {
+	GarageDoor door(2,3,6,13,
+		16,17,
+		27,28);
 
-			// Blink LED
-			std::cout << "Blinking! %u\r\n" <<  ++count << std::endl;
-			gpio_put(led_pin, true);
-			sleep_ms(1000);
-			gpio_put(led_pin, false);
-			sleep_ms(1000);
+	helper_print();
+	while (true) {
+		door.update();
+
+		int c = getchar_timeout_us(0);
+		if (c != PICO_ERROR_TIMEOUT) {
+			switch (c) {
+				case'c':
+					door.start_calibration();
+					cout << "DoorState: "<<door.get_door_state_string()<<endl;
+					cout << "ErrorState: "<<door.get_error_state_string()<<endl;
+					cout << "CalibrateState: "<<door.get_calibration_state_string()<<endl;
+					break;
+				case'o':
+					door.open();
+					cout << "DoorState: "<<door.get_door_state_string()<<endl;
+					cout << "ErrorState: "<<door.get_error_state_string()<<endl;
+					cout << "CalibrateState: "<<door.get_calibration_state_string()<<endl;
+					break;
+				case'x':
+					door.close();
+					break;
+				case's':
+					door.stop();
+					break;
+				case'p':
+					cout << "DoorState: "<<door.get_door_state_string()<<endl;
+					cout << "ErrorState: "<<door.get_error_state_string()<<endl;
+					cout << "CalibrateState: "<<door.get_calibration_state_string()<<endl;
+					break;
+			}
 		}
+		//sleep_ms(10);
+	}
+	return 0;
 }
