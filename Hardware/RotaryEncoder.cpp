@@ -7,7 +7,7 @@
 
 RotaryEncoder* rotary_instance = nullptr;
 
-RotaryEncoder::RotaryEncoder(const int rotA, const int rotB) : rotA(rotA, true, true, true), rotB(rotB, true, true, true), events{}
+RotaryEncoder::RotaryEncoder(const int rotA, const int rotB) : rotA(rotA, true, true, false), rotB(rotB, true, true, false), events{}
 {
 	rotary_instance = this;
 	queue_init(&events, sizeof(int), 10);

@@ -30,6 +30,11 @@ add_executable(${PROJECT_NAME}
         Hardware/RotaryEncoder.h
         Hardware/StepperMotor.cpp
         Hardware/StepperMotor.h
+        Hardware/LimitSwitch.cpp
+        Hardware/LimitSwitch.h
+        Application/GarageDoor.cpp
+        Application/GarageDoor.h
+
 )
 
 # Create map/bin/hex/uf2 files
