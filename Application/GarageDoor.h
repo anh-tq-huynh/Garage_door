@@ -20,13 +20,12 @@ public:
     GarageDoor(int motorA, int motorB, int motorC, int motorD,
         int limitSwitchLeft, int limitSwitchRight, int encoderA, int encoderB);
 
-    int start_calibration();
+    void start_calibration();
     void open();
     void close();
     void stop();
     void operate();
 
-    GarageDoorState get_state() const {return state;};
     bool is_calibrated() const {return calibrated;};
     void update(); // Call this periodically to update the state of the door
     std::string get_door_state_string() const;

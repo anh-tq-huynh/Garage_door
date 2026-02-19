@@ -17,20 +17,6 @@ GarageDoor:: GarageDoor(int motorA, int motorB, int motorC, int motorD,
 {
 }
 
-// std::string GarageDoor::get_state_string() const {
-//     switch (state) {
-//         case GarageDoorState::UNCALIBRATED: return "Uncalibrated";
-//         case GarageDoorState::CALIBRATING: return "Calibrating";
-//         case GarageDoorState::OPEN: return "Opened";
-//         case GarageDoorState::CLOSED: return "Closed";
-//         case GarageDoorState::OPENING: return "Opening";
-//         case GarageDoorState::CLOSING: return "Closing";
-//         case GarageDoorState::STOPPED: return "Stopped";
-//         case GarageDoorState::ERROR: return "Error";
-//         default: return "Unknown";
-//     }
-// }
-
 void GarageDoor::drive_to_limit(LimitSwitch &limit, int direction) {
     while (!limit.isTriggered()) {
         motor.step(direction);
@@ -55,7 +41,7 @@ bool GarageDoor::check_if_stuck(bool changed)
     }
 }
 
-int GarageDoor::start_calibration() {
+void GarageDoor::start_calibration() {
     state = GarageDoorState::CALIBRATING;
     calibrated = false;
     total_steps_calibration = 0;
@@ -70,7 +56,6 @@ int GarageDoor::start_calibration() {
     }
 
     //start from the close limit to count steps
-    int encoder_steps = 0;
     int steps_taken = 0;
 
     // move forward until trigger the left limit.
@@ -78,11 +63,11 @@ int GarageDoor::start_calibration() {
         motor.step(1);
         steps_taken++;
 
-        // check encoder event in case door is stuck
-        int event =0;
-        if (encoder.try_get_event(event)) {
-            encoder_steps += event;
-        }
+        // // check encoder event in case door is stuck
+        // int event =0;
+        // if (encoder.try_get_event(event)) {
+        //     encoder_steps += event;
+        // }
     }
     // door is at the left limit, now move back until the limit switch is not triggered to find the margin.
     margin =0;
@@ -99,7 +84,6 @@ int GarageDoor::start_calibration() {
     state = GarageDoorState::CLOSED;
     std::cout<<"Total steps:"<<total_steps_calibration<<std::endl;
 
-    return total_steps_calibration, margin;
 }
 
 void GarageDoor::open() {
