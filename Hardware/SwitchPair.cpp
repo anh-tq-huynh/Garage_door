@@ -14,6 +14,10 @@ bool SwitchPair::sw2_pressed() const
 	return sw2.read();
 }
 
+bool SwitchPair::sw1_pressed() const
+{
+	return sw1.read();
+}
 bool SwitchPair::both_btn_pressed() const
 {
 	return sw0_pressed() && sw2_pressed();

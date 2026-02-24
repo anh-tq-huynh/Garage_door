@@ -20,7 +20,7 @@ enum class GarageDoorState {
 class GarageDoor {
 public:
     GarageDoor(int motorA, int motorB, int motorC, int motorD,
-        int limitSwitchLeft, int limitSwitchRight, int encoderA, int encoderB, int led1, int led2);
+        int limitSwitchLeft, int limitSwitchRight, int encoderA, int encoderB);
 
     void start_calibration();
     void open();
@@ -34,6 +34,7 @@ public:
     std::string get_error_state_string() const;
     std::string get_calibration_state_string() const;
     void print_states() const;
+    bool is_error_state() const {return state == GarageDoorState::ERROR;}
 private:
     StepperMotor motor;
     // when I say "Left", it represents the side has a nail on the left.
@@ -41,7 +42,8 @@ private:
     LimitSwitch   limitSwitchLeft;
     LimitSwitch   limitSwitchRight;
     RotaryEncoder encoder;
-    Leds          leds;
+    // Leds          leds;
+    // // I move led to statemachine.cpp, let the GarageDoor file only for "door"
 
 
     GarageDoorState state=GarageDoorState::UNCALIBRATED;

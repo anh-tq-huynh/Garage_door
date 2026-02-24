@@ -10,19 +10,24 @@ using namespace std;
 
 GarageDoor::GarageDoor(int motorA, int motorB, int motorC, int motorD,
                        int limitSwitchLeft, int limitSwitchRight,
-                       int encoderA, int encoderB,
-                       int led1, int led2)
+                       int encoderA, int encoderB)
 	: motor(motorA, motorB, motorC, motorD),
 	  limitSwitchLeft(limitSwitchLeft),
 	  limitSwitchRight(limitSwitchRight),
-	  encoder(encoderA, encoderB),
-	  leds(led1, led2)
+	  encoder(encoderA, encoderB)
+	  //leds(led1, led2)
 {
 }
 
 void GarageDoor::drive_to_limit(LimitSwitch &limit, int direction) {
     while (!limit.isTriggered()) {
         motor.step(direction);
+        // check encoder event in case door is stuck
+        int event =0;
+        bool encoder_changed = encoder.try_get_event(event);
+        if (check_if_stuck(encoder_changed)) {
+            return;
+        }
     }
     motor.stop();
 }
@@ -66,11 +71,12 @@ void GarageDoor::start_calibration() {
         motor.step(1);
         steps_taken++;
 
-        // // check encoder event in case door is stuck
-        // int event =0;
-        // if (encoder.try_get_event(event)) {
-        //     encoder_steps += event;
-        // }
+        // check encoder event in case door is stuck
+        int event =0;
+        bool encoder_changed = encoder.try_get_event(event);
+        if (check_if_stuck(encoder_changed)) {
+            return;
+        }
     }
     // door is at the left limit, now move back until the limit switch is not triggered to find the margin.
     margin =0;
@@ -192,7 +198,7 @@ bool GarageDoor::update() { //return true means the end of movement, return fals
 
         if (check_if_stuck(encoder_changed))
         {
-			leds.blink_led();
+			//leds.blink_led();
         	return true;
         }
     } else if (state == GarageDoorState::CLOSING) {
@@ -207,7 +213,7 @@ bool GarageDoor::update() { //return true means the end of movement, return fals
 
         if (check_if_stuck(encoder_changed))
         {
-        	leds.blink_led();
+        	//eds.blink_led();
         	return true;
         }
     }

@@ -8,8 +8,9 @@
 using namespace std;
 
 StateMachine::StateMachine():
-	door(2,3,6,13,16,17,27,28,20,22),
-	btns (9,7)
+	door(2,3,6,13,16,17,27,28),
+	btns (9,7,8), //sw2,0,1
+	leds(20,22)
 {};
 
 void StateMachine::print_states() const
@@ -26,15 +27,16 @@ void StateMachine::run()
 	if (btns.both_btn_pressed())
 	{
 		door.start_calibration();
+		while (btns.both_btn_pressed());
 		print_states();
 	}
-	if (btns.sw0_pressed())
+	else if (btns.sw1_pressed())
 	{
 		if (!door.is_calibrated())
 		{
 			cout << "Door is not calibrated, please calibrate first" << endl;
 		}
-		while (btns.sw0_pressed()); //debounce button
+		while (btns.sw1_pressed()); //debounce button
 		door.operate();
 		sleep_ms(50);
 	}
@@ -47,7 +49,7 @@ void StateMachine::roll_door()
 	{
 		print_states();
 	}
-}
-
-
-
+	if (door.is_error_state()) {
+		leds.blink_led();
+	}
+};

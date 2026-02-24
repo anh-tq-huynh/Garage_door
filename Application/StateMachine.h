@@ -20,6 +20,7 @@ class StateMachine
 	private:
 		GarageDoor door;
 		SwitchPair btns;
+		Leds leds;
 };
 
 
