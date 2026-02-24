@@ -6,6 +6,8 @@
 #define GARAGE_DOOR_GARAGEDOOR_H
 
 #include <string>
+
+#include "../Hardware/Leds.h"
 #include "../Hardware/StepperMotor.h"
 #include "../Hardware/LimitSwitch.h"
 #include "../Hardware/RotaryEncoder.h"
@@ -18,7 +20,7 @@ enum class GarageDoorState {
 class GarageDoor {
 public:
     GarageDoor(int motorA, int motorB, int motorC, int motorD,
-        int limitSwitchLeft, int limitSwitchRight, int encoderA, int encoderB);
+        int limitSwitchLeft, int limitSwitchRight, int encoderA, int encoderB, int led1, int led2);
 
     void start_calibration();
     void open();
@@ -26,18 +28,21 @@ public:
     void stop();
     void operate();
 
-    bool is_calibrated() const {return calibrated;};
-    void update(); // Call this periodically to update the state of the door
+    bool is_calibrated() const { return calibrated; };
+    bool        update(); // Call this periodically to update the state of the door
     std::string get_door_state_string() const;
     std::string get_error_state_string() const;
     std::string get_calibration_state_string() const;
+    void print_states() const;
 private:
     StepperMotor motor;
     // when I say "Left", it represents the side has a nail on the left.
     // also the side has a stepper motor underneath
-    LimitSwitch limitSwitchLeft;
-    LimitSwitch limitSwitchRight;
+    LimitSwitch   limitSwitchLeft;
+    LimitSwitch   limitSwitchRight;
     RotaryEncoder encoder;
+    Leds          leds;
+
 
     GarageDoorState state=GarageDoorState::UNCALIBRATED;
     bool calibrated=false;

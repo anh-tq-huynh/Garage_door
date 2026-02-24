@@ -10,7 +10,8 @@
 class LimitSwitch {
 public:
     explicit LimitSwitch(int pin):pin(pin,true,true,true){};
-    bool isTriggered() {
+    bool isTriggered() const
+    {
         return pin.read();
     }
 private:
