@@ -5,21 +5,29 @@
 #include "GarageDoor.h"
 
 #include <iostream>
-
 #include "pico/time.h"
+using namespace std;
 
-GarageDoor:: GarageDoor(int motorA, int motorB, int motorC, int motorD,
-    int limitSwitchLeft, int limitSwitchRight, int encoderA, int encoderB)
-    : motor(motorA, motorB, motorC, motorD),
-      limitSwitchLeft(limitSwitchLeft),
-      limitSwitchRight(limitSwitchRight),
-      encoder(encoderA, encoderB)
+GarageDoor::GarageDoor(int motorA, int motorB, int motorC, int motorD,
+                       int limitSwitchLeft, int limitSwitchRight,
+                       int encoderA, int encoderB)
+	: motor(motorA, motorB, motorC, motorD),
+	  limitSwitchLeft(limitSwitchLeft),
+	  limitSwitchRight(limitSwitchRight),
+	  encoder(encoderA, encoderB)
+	  //leds(led1, led2)
 {
 }
 
 void GarageDoor::drive_to_limit(LimitSwitch &limit, int direction) {
     while (!limit.isTriggered()) {
         motor.step(direction);
+        // check encoder event in case door is stuck
+        int event =0;
+        bool encoder_changed = encoder.try_get_event(event);
+        if (check_if_stuck(encoder_changed)) {
+            return;
+        }
     }
     motor.stop();
 }
@@ -63,11 +71,12 @@ void GarageDoor::start_calibration() {
         motor.step(1);
         steps_taken++;
 
-        // // check encoder event in case door is stuck
-        // int event =0;
-        // if (encoder.try_get_event(event)) {
-        //     encoder_steps += event;
-        // }
+        // check encoder event in case door is stuck
+        int event =0;
+        bool encoder_changed = encoder.try_get_event(event);
+        if (check_if_stuck(encoder_changed)) {
+            return;
+        }
     }
     // door is at the left limit, now move back until the limit switch is not triggered to find the margin.
     margin =0;
@@ -78,7 +87,7 @@ void GarageDoor::start_calibration() {
     motor.stop();
 
     // current_step=0 means CLOSED, current_step=total_steps_calibration means OPEN.
-    total_steps_calibration = steps_taken - margin;
+	total_steps_calibration = steps_taken - margin;
     current_step = total_steps_calibration;
     calibrated = true;
     state = GarageDoorState::CLOSED;
@@ -113,6 +122,14 @@ void GarageDoor::stop() {
         state = GarageDoorState::STOPPED;
     }
 }
+void GarageDoor::print_states() const
+{
+	cout << "DoorState: "<<get_door_state_string()<<endl;
+	cout << "ErrorState: "<<get_error_state_string()<<endl;
+	cout << "CalibrateState: "<<get_calibration_state_string()<<endl;
+	cout << "===============================\n";
+	cout << "\n";
+}
 
 void GarageDoor::operate() {
     if (!calibrated) {
@@ -134,6 +151,7 @@ void GarageDoor::operate() {
         case GarageDoorState::CLOSING:
             // Door is current opening or closing → door stops
             stop();
+    		print_states();
             state = GarageDoorState::STOPPED;
             break;
 
@@ -154,7 +172,7 @@ void GarageDoor::operate() {
     }
 }
 
-void GarageDoor::update() {
+bool GarageDoor::update() { //return true means the end of movement, return false means there's still movement to execute
     int event = 0;
     bool encoder_changed = encoder.try_get_event(event);
 
@@ -172,26 +190,34 @@ void GarageDoor::update() {
         if (current_step <= margin) {
             motor.stop();
             state = GarageDoorState::OPEN;
-            return;
+            return true;
         }
 
         motor.step(-1); // toward right
         current_step--;
 
-        if (check_if_stuck(encoder_changed)) return;
-
+        if (check_if_stuck(encoder_changed))
+        {
+			//leds.blink_led();
+        	return true;
+        }
     } else if (state == GarageDoorState::CLOSING) {
         if (current_step >= total_steps_calibration) {
             motor.stop();
             state = GarageDoorState::CLOSED;
-            return;
+            return true;
         }
 
         motor.step(1); // toward left
         current_step++;
 
-        if (check_if_stuck(encoder_changed)) return;
+        if (check_if_stuck(encoder_changed))
+        {
+        	//eds.blink_led();
+        	return true;
+        }
     }
+	return false;
 }
 
 std::string GarageDoor::get_door_state_string() const {

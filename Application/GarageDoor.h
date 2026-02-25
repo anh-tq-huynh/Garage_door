@@ -6,6 +6,8 @@
 #define GARAGE_DOOR_GARAGEDOOR_H
 
 #include <string>
+
+#include "../Hardware/Leds.h"
 #include "../Hardware/StepperMotor.h"
 #include "../Hardware/LimitSwitch.h"
 #include "../Hardware/RotaryEncoder.h"
@@ -26,18 +28,23 @@ public:
     void stop();
     void operate();
 
-    bool is_calibrated() const {return calibrated;};
-    void update(); // Call this periodically to update the state of the door
+    bool is_calibrated() const { return calibrated; };
+    bool        update(); // Call this periodically to update the state of the door
     std::string get_door_state_string() const;
     std::string get_error_state_string() const;
     std::string get_calibration_state_string() const;
+    void print_states() const;
+    bool is_error_state() const {return state == GarageDoorState::ERROR;}
 private:
     StepperMotor motor;
     // when I say "Left", it represents the side has a nail on the left.
     // also the side has a stepper motor underneath
-    LimitSwitch limitSwitchLeft;
-    LimitSwitch limitSwitchRight;
+    LimitSwitch   limitSwitchLeft;
+    LimitSwitch   limitSwitchRight;
     RotaryEncoder encoder;
+    // Leds          leds;
+    // // I move led to statemachine.cpp, let the GarageDoor file only for "door"
+
 
     GarageDoorState state=GarageDoorState::UNCALIBRATED;
     bool calibrated=false;
