@@ -1,0 +1,3 @@
+[submodule "pico-modbus"]
+	path = pico-modbus
+	url = https://gitlab.metropolia.fi/lansk/pico-modbus.git
