@@ -1,6 +1,7 @@
 //
 // Created by Anh Huynh on 16.2.2026.
 //
+#include <fstream>
 #include <iostream>
 
 #include "Hardware/GPIOPin.h"
@@ -9,6 +10,7 @@
 #include "pico/time.h"
 #include "Application/GarageDoor.h"
 #include "Application/StateMachine.h"
+std::string getEnvVar (std::string const &key);
 using namespace std;
 
 // here is a test code using serial command instead of button controller,
@@ -77,6 +79,7 @@ void welcome_text()
 }
 int main()
 {
+
 	StateMachine garage_door;
 	stdio_init_all();
 	welcome_text();
@@ -84,7 +87,42 @@ int main()
 	{
 		garage_door.roll_door();
 		garage_door.run();
-		//garage_door.print_states();
-		//sleep_ms(10);
 	}
+	/*
+	stdio_init_all();
+	while (true)
+	{
+		std::string ssid = getEnvVar("SSID");
+		std::string password = getEnvVar("PASSWORD");
+		sleep_ms(1000);
+		std::cout << ssid;
+		std::cout << password;
+	}*/
+}
+
+std::string getEnvVar (std::string const &key)
+{
+	ifstream File(".env");
+	if (!File.is_open())
+	{
+		cout << "File not found";
+	}
+	else
+	{
+		std::string line, value, key_read;
+		while (getline(File, line))
+		{
+			if (!line.empty())
+			{
+				auto pos = line.find('=');
+				key_read = line.substr(0, pos);
+				if (key_read == key)
+				{
+					value = line.substr(pos +1);
+					return value;
+				}
+			}
+		}
+	}
+	return std::string("");
 }

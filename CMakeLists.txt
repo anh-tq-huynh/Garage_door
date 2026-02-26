@@ -40,6 +40,10 @@ add_executable(${PROJECT_NAME}
         Application/StateMachine.h
         Hardware/Leds.cpp
         Hardware/Leds.h
+        Application/MQTTService.cpp
+        Application/MQTTService.h
+        ${MQTT_PACKET_SOURCES}
+
 
 )
 
@@ -49,10 +53,22 @@ pico_add_extra_outputs(${PROJECT_NAME})
 # Link to pico_stdlib (gpio, time, etc. functions)
 target_link_libraries(${PROJECT_NAME}
         pico_stdlib
-        hardware_pwm
-        hardware_gpio
         hardware_i2c
+        hardware_spi
+        hardware_gpio
+        pico_cyw43_arch_lwip_poll
 )
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+        pico-modbus/mqtt
+        paho.mqtt.embedded-c/MQTTPacket/src
+        paho.mqtt.embedded-c/MQTTClient/src
+        pico-modbus
+        pico-modbus/display/fonts
+
+        ${CMAKE_CURRENT_LIST_DIR}/include
+)
+
 
 # Disable usb output, enable uart output
 pico_enable_stdio_usb(${PROJECT_NAME} 0)

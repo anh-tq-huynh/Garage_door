@@ -17,6 +17,7 @@ class StateMachine
 		//void garage_door_operation();
 		void roll_door();
 		void run();
+		void blink_wait() const;
 	private:
 		GarageDoor door;
 		SwitchPair btns;

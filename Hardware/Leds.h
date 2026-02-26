@@ -11,11 +11,16 @@ class Leds
 {
 	public:
 		Leds(int led1, int led2) : led1(led1, false, false, false), led2(led2, false, false, false){};
-		void blink_led();
+		bool blink_finished() const;
+		void set_blink_finished();
+		void set_blink_not_finished();
+		void leds_on() const;
+		void leds_off() const;
 
 	private:
 		GPIOPin led1;
 		GPIOPin led2;
+		bool blink_done = true;
 };
 
 
