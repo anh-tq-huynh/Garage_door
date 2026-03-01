@@ -7,6 +7,7 @@
 #include "GarageDoor.h"
 #include "../Hardware/Leds.h"
 #include "../Hardware/SwitchPair.h"
+#include "../Hardware/OLEDDisplay.h"
 
 
 class StateMachine
@@ -22,6 +23,7 @@ class StateMachine
 		GarageDoor door;
 		SwitchPair btns;
 		Leds leds;
+		mutable OLEDDisplay oled;
 };
 
 

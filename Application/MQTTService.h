@@ -18,7 +18,7 @@ class MQTTService
 		string ssid;
 		string pwd;
 		IPStack ipstack;
-		auto client;
+		 MQTT::Client<IPStack, Countdown> client;
 };
 
 

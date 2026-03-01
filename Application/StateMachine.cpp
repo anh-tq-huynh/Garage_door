@@ -50,6 +50,7 @@ void StateMachine::print_states() const
 	cout << "CalibrateState: "<<door.get_calibration_state_string()<<endl;
 	cout << "===============================\n";
 	cout << "\n";
+	oled.show_status(door.get_door_state_string(), door.get_error_state_string(), door.get_calibration_state_string());
 }
 
 void StateMachine::run()
