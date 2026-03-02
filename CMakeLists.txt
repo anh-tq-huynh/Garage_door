@@ -43,6 +43,7 @@ add_executable(${PROJECT_NAME}
         Application/MQTTService.cpp
         Application/MQTTService.h
         ${MQTT_PACKET_SOURCES}
+        private.h
 
 
 )
@@ -68,6 +69,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
         ${CMAKE_CURRENT_LIST_DIR}/include
 )
+
 
 
 # Disable usb output, enable uart output

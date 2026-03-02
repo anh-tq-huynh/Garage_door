@@ -33,7 +33,7 @@ StepperMotor::StepperMotor(int pinA, int pinB, int pinC, int pinD)
 void StepperMotor::step(int direction) {
 	current_step = (current_step + direction + 8) % 8;
 
-	for (int i = 0; i < coils.size(); i++) {
+	for (int i = 0; i < static_cast<int>(coils.size()); i++) {
 		coils[i]->write(step_sequence[current_step][i]);
 	}
 	sleep_ms(step_delay_ms);
