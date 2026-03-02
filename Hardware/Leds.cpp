@@ -8,15 +8,35 @@
 
 #include "pico/time.h"
 
-void Leds::blink_led()
+void Leds::leds_on() const
 {
-	for (int i = 0; i <= 5; ++i)
-	{
-		led1.write(1);
-		led2.write(1);
-		sleep_ms(200);
-		led1.write(0);
-		led2.write(0);
-		sleep_ms(200);
-	}
+	led1.write(1);
+	led2.write(1);
 }
+
+void Leds::leds_off() const
+{
+	led1.write(0);
+	led2.write(0);
+}
+
+bool Leds::blink_finished() const
+{
+	return blink_done;
+}
+
+
+
+void Leds::set_blink_finished()
+{
+	blink_done = true;
+}
+
+void Leds::set_blink_not_finished()
+{
+	blink_done = false;
+}
+
+
+
+

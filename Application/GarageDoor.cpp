@@ -48,12 +48,18 @@ bool GarageDoor::check_if_stuck(bool changed)
         return false;
     }
 }
+void GarageDoor::free_encoder_events()
+{
+	int encoder_event = 0;
+	while (encoder.try_get_event(encoder_event));
+}
 
 void GarageDoor::start_calibration() {
     state = GarageDoorState::CALIBRATING;
     calibrated = false;
     total_steps_calibration = 0;
     current_step = 0;
+	stuck_counter = 0;
 
     // first go to right limit, set right side as calibration starting point
     drive_to_limit(limitSwitchRight, -1);
@@ -176,6 +182,7 @@ bool GarageDoor::update() { //return true means the end of movement, return fals
     int event = 0;
     bool encoder_changed = encoder.try_get_event(event);
 
+
     // helper code to test if the encoder event
     // we need to know approx how many steps the encoder will trigger when the door is moving, to determine the threshold for stuck detection.
 
@@ -198,7 +205,6 @@ bool GarageDoor::update() { //return true means the end of movement, return fals
 
         if (check_if_stuck(encoder_changed))
         {
-			//leds.blink_led();
         	return true;
         }
     } else if (state == GarageDoorState::CLOSING) {
@@ -213,7 +219,6 @@ bool GarageDoor::update() { //return true means the end of movement, return fals
 
         if (check_if_stuck(encoder_changed))
         {
-        	//eds.blink_led();
         	return true;
         }
     }
@@ -233,4 +238,8 @@ std::string GarageDoor::get_error_state_string() const {
 
 std::string GarageDoor::get_calibration_state_string() const {
     return calibrated ? "Calibrated" : "Not calibrated";
+}
+void GarageDoor::reset_state()
+{
+	state = GarageDoorState::UNCALIBRATED;
 }

@@ -7,6 +7,7 @@
 #include "GarageDoor.h"
 #include "../Hardware/Leds.h"
 #include "../Hardware/SwitchPair.h"
+#include "../Hardware/OLEDDisplay.h"
 
 
 class StateMachine
@@ -17,10 +18,12 @@ class StateMachine
 		//void garage_door_operation();
 		void roll_door();
 		void run();
+		void blink_wait() const;
 	private:
 		GarageDoor door;
 		SwitchPair btns;
 		Leds leds;
+		mutable OLEDDisplay oled;
 };
 
 

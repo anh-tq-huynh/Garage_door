@@ -35,6 +35,8 @@ public:
     std::string get_calibration_state_string() const;
     void print_states() const;
     bool is_error_state() const {return state == GarageDoorState::ERROR;}
+		void reset_state();
+		void free_encoder_events();
 private:
     StepperMotor motor;
     // when I say "Left", it represents the side has a nail on the left.
