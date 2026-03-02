@@ -56,6 +56,7 @@ add_executable(${PROJECT_NAME}
         pico-modbus/i2c/PicoI2CDevice.cpp
         pico-modbus/i2c/PicoI2CDevice.h
         ${MQTT_PACKET_SOURCES}
+        private.h
 
 
 )
@@ -85,6 +86,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
         ${CMAKE_CURRENT_LIST_DIR}/include
 )
+
 
 
 # Disable usb output, enable uart output
