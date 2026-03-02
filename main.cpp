@@ -100,29 +100,4 @@ int main()
 	}*/
 }
 
-std::string getEnvVar (std::string const &key)
-{
-	ifstream File(".env");
-	if (!File.is_open())
-	{
-		cout << "File not found";
-	}
-	else
-	{
-		std::string line, value, key_read;
-		while (getline(File, line))
-		{
-			if (!line.empty())
-			{
-				auto pos = line.find('=');
-				key_read = line.substr(0, pos);
-				if (key_read == key)
-				{
-					value = line.substr(pos +1);
-					return value;
-				}
-			}
-		}
-	}
-	return std::string("");
-}
+
