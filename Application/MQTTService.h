@@ -20,11 +20,11 @@ class MQTTService
 		void connect_mqtt();
 		void connect_tcp();
 
-		void send_message(const string &msg);
-
-		void subscribe();
+		void send_message(const string &msg, const char* topic);
+		void subscribe(const char* topic);
 
 		void set_qos(int qos);
+		void client_yield();
 
 	private:
 		string ssid;
@@ -38,7 +38,7 @@ class MQTTService
 		bool tcp_is_connect = false;
 		bool mqtt_is_connect = false;
 
-		char* topic;
+		//char* topic;
 		int rc;
 
 		absolute_time_t mqtt_send = make_timeout_time_ms(2000);

@@ -10,14 +10,14 @@
 #include <iostream>
 
 MQTTService::MQTTService(const string &ssid, const string &pwd) : ssid(ssid), pwd(pwd), ipstack(ssid.c_str(), pwd.c_str()),
-                                                    client(ipstack), data(), topic(), rc()
+                                                    client(ipstack), data(), rc()
 {
 	broker_ip             = BROKER_IP;
 	port                  = PORT;
 	data                  = MQTTPacket_connectData_initializer;
 	data.MQTTVersion      = 3;
-	topic                 = const_cast<char *>("Garage-door-status");
-	data.clientID.cstring = topic;
+	data.clientID.cstring = const_cast<char *>("PicoW-sample");
+	//topic                 = const_cast<char *>("Garage-door-status");
 }
 
 void MQTTService::connect_mqtt()
@@ -90,7 +90,7 @@ void messageArrived(const MQTT::MessageData &md)
 	cout << "Payload " << message.payload << "\n";
 }
 
-void MQTTService::subscribe()
+void MQTTService::subscribe(const char* topic)
 {
 	rc = client.subscribe(topic, MQTT::QOS2, reinterpret_cast<MQTT::Client<IPStack, Countdown>::messageHandler>(messageArrived));
 	if (rc != 0)
@@ -100,7 +100,7 @@ void MQTTService::subscribe()
 	cout << "MQTT subsribed" << endl;
 }
 
-void MQTTService::send_message(const string &msg)
+void MQTTService::send_message(const string &msg, const char* topic)
 {
 	if (time_reached(mqtt_send))
 	{
@@ -168,3 +168,8 @@ void MQTTService::send_message(const string &msg)
 		}
 	}
 }
+void MQTTService::client_yield()
+{
+	client.yield(100); // socket that client uses calls cyw43_arch_poll()
+}
+
