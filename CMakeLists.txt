@@ -55,10 +55,16 @@ add_executable(${PROJECT_NAME}
         pico-modbus/i2c/PicoI2CBus.h
         pico-modbus/i2c/PicoI2CDevice.cpp
         pico-modbus/i2c/PicoI2CDevice.h
-        ${MQTT_PACKET_SOURCES}
         private.h
-
-
+        pico-modbus/mqtt/IPStack.cpp
+        pico-modbus/mqtt/Countdown.cpp
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTConnectClient.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTDeserializePublish.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTFormat.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTPacket.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTSerializePublish.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTSubscribeClient.c
+        pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTUnsubscribeClient.c
 )
 
 # Create map/bin/hex/uf2 files

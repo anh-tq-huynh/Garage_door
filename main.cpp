@@ -96,7 +96,10 @@ int main()
 
 int main () //Test MQTT connection
 {
-	cyw43_arch_poll();
+	stdio_init_all();
+	sleep_ms(3000);
+
+//	cyw43_arch_poll();
 	//Remember to connect your laptop to the WiFi MP-IOT
 	MQTTService MQTT_inst (SSID,PASSWORD);
 
