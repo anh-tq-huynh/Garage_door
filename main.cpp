@@ -10,6 +10,8 @@
 #include "pico/time.h"
 #include "Application/GarageDoor.h"
 #include "Application/StateMachine.h"
+#include "Application/MQTTService.h"
+#include "private.h"
 std::string getEnvVar (std::string const &key);
 using namespace std;
 
@@ -77,6 +79,7 @@ void welcome_text()
 	cout << "Hello, program starts! ";
 	cout << "Please press SW0 and SW2 to calibrate." << endl;
 }
+/*
 int main()
 {
 
@@ -88,16 +91,36 @@ int main()
 		garage_door.roll_door();
 		garage_door.run();
 	}
-	/*
-	stdio_init_all();
-	while (true)
-	{
-		std::string ssid = getEnvVar("SSID");
-		std::string password = getEnvVar("PASSWORD");
-		sleep_ms(1000);
-		std::cout << ssid;
-		std::cout << password;
-	}*/
+
+}*/
+
+int main () //Test MQTT connection
+{
+	cyw43_arch_poll();
+	//Remember to connect your laptop to the WiFi MP-IOT
+	MQTTService MQTT_inst (SSID,PASSWORD);
+
+	//Connect TCP - loop until connection is successful
+	MQTT_inst.connect_tcp();
+
+	//Connect MQTT - loop until connection is successful
+	MQTT_inst.connect_mqtt();
+
+	//Subsribe to topic, ready to receive command
+	//We need to install docker, and run the Eclipse Mosquitto to send command
+	MQTT_inst.subscribe("Garage/door/command");
+
+	absolute_time_t timeout = get_absolute_time();
+
+	while (true) {
+		MQTT_inst.client_yield();
+
+		if (absolute_time_diff_us(get_absolute_time(), timeout) < 0) {
+			char* send_topic = "Garage/door/status";
+			MQTT_inst.send_message("STATUS: IDLE", send_topic);
+			timeout = make_timeout_time_ms(5000); //send message every 5 seconds
+		}
+	}
 }
 
 
