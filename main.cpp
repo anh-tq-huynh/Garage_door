@@ -111,7 +111,7 @@ int main () //Test MQTT connection
 
 	//Subsribe to topic, ready to receive command
 	//We need to install docker, and run the Eclipse Mosquitto to send command
-	MQTT_inst.subscribe("Garage/door/command");
+	MQTT_inst.subscribe("garage/door/command");
 
 	absolute_time_t timeout = get_absolute_time();
 
@@ -119,7 +119,7 @@ int main () //Test MQTT connection
 		MQTT_inst.client_yield();
 
 		if (absolute_time_diff_us(get_absolute_time(), timeout) < 0) {
-			char* send_topic = "Garage/door/status";
+			char* send_topic = "garage/door/status";
 			MQTT_inst.send_message("STATUS: IDLE", send_topic);
 			timeout = make_timeout_time_ms(5000); //send message every 5 seconds
 		}
