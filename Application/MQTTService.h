@@ -5,13 +5,12 @@
 #ifndef GARAGE_DOOR_MQTT_H
 #define GARAGE_DOOR_MQTT_H
 #include <string>
-
 #include "Countdown.h"
 #include "IPStack.h"
 #include "MQTTPacket.h"
 #include "paho.mqtt.embedded-c/MQTTClient/src/MQTTClient.h"
 using namespace std;
-
+class StateMachine;
 
 class MQTTService
 {
@@ -22,9 +21,12 @@ class MQTTService
 
 		void send_message(const string &msg, const char* topic);
 		void subscribe(const char* topic);
+		void publish(const string &msg, const char* topic);
 
 		void set_qos(int qos);
 		void client_yield();
+
+		void set_state_machine(StateMachine* sm);
 
 	private:
 		string ssid;
@@ -41,9 +43,13 @@ class MQTTService
 		//char* topic;
 		int rc;
 
-		absolute_time_t mqtt_send = make_timeout_time_ms(2000);
+		absolute_time_t mqtt_send  = make_timeout_time_ms(2000);
+		absolute_time_t yield_timer = make_timeout_time_ms(50);
 		int mqtt_qos = 0;
 		int msg_count = 0;
+
+		static StateMachine* state_machine;
+		static void static_message_arrived(MQTT::MessageData& md);
 };
 
 

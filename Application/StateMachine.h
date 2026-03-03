@@ -8,22 +8,25 @@
 #include "../Hardware/Leds.h"
 #include "../Hardware/SwitchPair.h"
 #include "../Hardware/OLEDDisplay.h"
+#include "MQTTService.h"
 
 
 class StateMachine
 {
 	public:
-		StateMachine();
+		StateMachine(MQTTService& mqtt);
 		void print_states() const;
 		//void garage_door_operation();
 		void roll_door();
 		void run();
 		void blink_wait() const;
+		void handle_mqtt_command(const char* payload);
 	private:
 		GarageDoor door;
 		SwitchPair btns;
 		Leds leds;
 		mutable OLEDDisplay oled;
+		MQTTService& mqtt;
 };
 
 

@@ -3,14 +3,16 @@
 //
 
 #include "StateMachine.h"
+#include "MQTTService.h"
 
 #include <iostream>
 using namespace std;
 
-StateMachine::StateMachine():
+StateMachine::StateMachine(MQTTService& mqtt):
 	door(2,3,6,13,16,17,27,28),
 	btns (9,7,8), //sw2,0,1
-	leds(20,22)
+	leds(20,22),
+	mqtt(mqtt)
 {};
 
 void StateMachine::blink_wait() const
@@ -62,6 +64,10 @@ void StateMachine::run()
 		leds.set_blink_not_finished();
 		while (btns.both_btn_pressed());
 		print_states();
+		mqtt.publish(door.get_door_state_string() + " | " +
+		         door.get_error_state_string() + " | " +
+		         door.get_calibration_state_string(),
+		         "garage/door/status");
 		return;
 	}
 
@@ -73,6 +79,10 @@ void StateMachine::run()
 		}
 		while (btns.sw1_pressed()); //debounce button
 		door.operate();
+		mqtt.publish(door.get_door_state_string() + " | " +
+		         door.get_error_state_string() + " | " +
+		         door.get_calibration_state_string(),
+		         "garage/door/status");
 		sleep_ms(50);
 	}
 }
@@ -83,7 +93,12 @@ void StateMachine::roll_door()
 	if (roll_end)
 	{
 		print_states();
+		mqtt.publish(door.get_door_state_string() + " | " +
+		         door.get_error_state_string() + " | " +
+		         door.get_calibration_state_string(),
+		         "garage/door/status");
 	}
+
 	if (door.is_error_state())
 	{
 		if (!leds.blink_finished()) {
@@ -91,5 +106,35 @@ void StateMachine::roll_door()
 			leds.set_blink_finished();
 		}
 	}
-
 };
+
+void StateMachine::handle_mqtt_command(const char* payload)
+{
+	string cmd(payload);
+	cout << "[MQTT] Command received: '" << cmd << "'" << endl;
+
+	if (!door.is_calibrated()) {
+		cout << "[MQTT] Door not calibrated, ignoring command." << endl;
+		mqtt.publish("Not calibrated", "garage/door/status");
+		return;
+	}
+
+	if (cmd == "OPEN") {
+		door.open();
+	} else if (cmd == "CLOSE") {
+		door.close();
+	} else if (cmd == "STOP") {
+		door.stop();
+	} else if (cmd == "CALIBRATE") {
+		door.start_calibration();
+	} else {
+		cout << "[MQTT] Unknown command: " << cmd << endl;
+		return;
+	}
+
+	print_states();
+	mqtt.publish(door.get_door_state_string() + " | " +
+	             door.get_error_state_string() + " | " +
+	             door.get_calibration_state_string(),
+	             "garage/door/status");
+}
