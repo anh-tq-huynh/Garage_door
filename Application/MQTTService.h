@@ -27,6 +27,7 @@ class MQTTService
 		void client_yield();
 
 		void set_state_machine(StateMachine* sm);
+		int get_msg_count();
 
 	private:
 		string ssid;

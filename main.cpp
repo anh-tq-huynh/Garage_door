@@ -135,15 +135,18 @@ int main()
 	MQTTService mqtt(SSID, PASSWORD);
 	mqtt.connect_tcp();
 	mqtt.connect_mqtt();
+	int mqtt_msg_count = 0;
 
 
 	StateMachine sm(mqtt);
 	mqtt.set_state_machine(&sm);
 	mqtt.subscribe("garage/door/command");
 
+	welcome_text();
+
 	while (true) {
 		mqtt.client_yield();
-		sm.run();
+		sm.run(mqtt_msg_count);
 		sm.roll_door();
 	}
 }

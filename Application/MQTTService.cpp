@@ -266,4 +266,9 @@ void MQTTService::send_message(const string &msg, const char* topic)
 }
 */
 
+int MQTTService::get_msg_count()
+{
+	return msg_count;
+}
+
 

@@ -11,10 +11,16 @@
 #include "../Hardware/StepperMotor.h"
 #include "../Hardware/LimitSwitch.h"
 #include "../Hardware/RotaryEncoder.h"
+using namespace std;
 
 
 enum class GarageDoorState {
     UNCALIBRATED,CALIBRATING,CALIBRATED,OPEN,CLOSED,OPENING,CLOSING,STOPPED,ERROR
+};
+
+enum class DoorCommand
+{
+	CLOSE, OPEN, STOP, CALIBRATE, IDLE
 };
 
 class GarageDoor {
@@ -28,16 +34,17 @@ public:
     void stop();
     void operate();
 
-    bool is_calibrated() const { return calibrated; };
+    bool        is_calibrated() const { return calibrated; };
     bool        update(); // Call this periodically to update the state of the door
     std::string get_door_state_string() const;
     std::string get_error_state_string() const;
     std::string get_calibration_state_string() const;
     std::string get_full_state_string() const;
-    void print_states() const;
-    bool is_error_state() const {return state == GarageDoorState::ERROR;}
-		void reset_state();
-		void free_encoder_events();
+    void        print_states() const;
+    bool        is_error_state() const {return state == GarageDoorState::ERROR;}
+		void    reset_state();
+		void    free_encoder_events();
+		void    set_state(DoorCommand cmd);
 private:
     StepperMotor motor;
     // when I say "Left", it represents the side has a nail on the left.
@@ -45,8 +52,6 @@ private:
     LimitSwitch   limitSwitchLeft;
     LimitSwitch   limitSwitchRight;
     RotaryEncoder encoder;
-    // Leds          leds;
-    // // I move led to statemachine.cpp, let the GarageDoor file only for "door"
 
 
     GarageDoorState state=GarageDoorState::UNCALIBRATED;

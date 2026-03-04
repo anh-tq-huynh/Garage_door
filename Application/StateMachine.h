@@ -18,15 +18,18 @@ class StateMachine
 		void print_states() const;
 		//void garage_door_operation();
 		void roll_door();
-		void run();
+		void run(int &mqtt_msg_count);
 		void blink_wait() const;
+
 		void handle_mqtt_command(const char* payload);
+		void send_status() const;
 	private:
 		GarageDoor door;
 		SwitchPair btns;
 		Leds leds;
 		mutable OLEDDisplay oled;
 		MQTTService& mqtt;
+		DoorCommand cmd;
 };
 
 
