@@ -6,6 +6,8 @@
 
 #include <iostream>
 #include "pico/time.h"
+
+
 using namespace std;
 
 GarageDoor::GarageDoor(int motorA, int motorB, int motorC, int motorD,
@@ -15,7 +17,6 @@ GarageDoor::GarageDoor(int motorA, int motorB, int motorC, int motorD,
 	  limitSwitchLeft(limitSwitchLeft),
 	  limitSwitchRight(limitSwitchRight),
 	  encoder(encoderA, encoderB)
-	  //leds(led1, led2)
 {
 }
 
@@ -228,6 +229,7 @@ bool GarageDoor::update() { //return true means the end of movement, return fals
 std::string GarageDoor::get_door_state_string() const {
     if (state == GarageDoorState::OPEN) return "Open";
     if (state == GarageDoorState::CLOSED) return "Closed";
+	if (!calibrated) return "Unknown";
     return "In between";
 }
 
@@ -242,4 +244,30 @@ std::string GarageDoor::get_calibration_state_string() const {
 void GarageDoor::reset_state()
 {
 	state = GarageDoorState::UNCALIBRATED;
+	calibrated = false;
 }
+void GarageDoor::set_state(DoorCommand cmd)
+{
+	switch (cmd)
+	{
+		case (DoorCommand::CLOSE):
+			state = GarageDoorState::OPEN; //Door is now open -> need to close
+			break;
+		case(DoorCommand::OPEN):
+			state = GarageDoorState::CLOSED; //Door is now closed -> need to open
+			break;
+		case (DoorCommand::STOP):
+			//state = GarageDoorState::OPENING;
+			if (state == GarageDoorState::CLOSED)
+			{
+				state = GarageDoorState::OPEN;
+			} else if (state == GarageDoorState::OPEN)
+			{
+				state = GarageDoorState::CLOSED;
+			}
+			break;
+		default:
+			break;
+	}
+}
+

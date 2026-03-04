@@ -93,10 +93,13 @@ int main()
 	}
 
 }*/
-
+/*
 int main () //Test MQTT connection
 {
-	cyw43_arch_poll();
+	stdio_init_all();
+	sleep_ms(3000);
+
+//	cyw43_arch_poll();
 	//Remember to connect your laptop to the WiFi MP-IOT
 	MQTTService MQTT_inst (SSID,PASSWORD);
 
@@ -108,7 +111,7 @@ int main () //Test MQTT connection
 
 	//Subsribe to topic, ready to receive command
 	//We need to install docker, and run the Eclipse Mosquitto to send command
-	MQTT_inst.subscribe("Garage/door/command");
+	MQTT_inst.subscribe("garage/door/command");
 
 	absolute_time_t timeout = get_absolute_time();
 
@@ -116,11 +119,34 @@ int main () //Test MQTT connection
 		MQTT_inst.client_yield();
 
 		if (absolute_time_diff_us(get_absolute_time(), timeout) < 0) {
-			char* send_topic = "Garage/door/status";
+			char* send_topic = "garage/door/status";
 			MQTT_inst.send_message("STATUS: IDLE", send_topic);
 			timeout = make_timeout_time_ms(5000); //send message every 5 seconds
 		}
 	}
 }
+*/
 
+int main()
+{
+	stdio_init_all();
+	sleep_ms(3000);
+
+	MQTTService mqtt(SSID, PASSWORD);
+	mqtt.connect_tcp();
+	mqtt.connect_mqtt();
+
+
+	StateMachine sm(mqtt);
+	mqtt.set_state_machine(&sm);
+	mqtt.subscribe("garage/door/command");
+
+	welcome_text();
+
+	while (true) {
+		mqtt.client_yield();
+		sm.run();
+		sm.roll_door();
+	}
+}
 
