@@ -229,6 +229,7 @@ bool GarageDoor::update() { //return true means the end of movement, return fals
 std::string GarageDoor::get_door_state_string() const {
     if (state == GarageDoorState::OPEN) return "Open";
     if (state == GarageDoorState::CLOSED) return "Closed";
+	if (!calibrated) return "Unknown";
     return "In between";
 }
 
@@ -243,6 +244,7 @@ std::string GarageDoor::get_calibration_state_string() const {
 void GarageDoor::reset_state()
 {
 	state = GarageDoorState::UNCALIBRATED;
+	calibrated = false;
 }
 void GarageDoor::set_state(DoorCommand cmd)
 {
@@ -256,6 +258,13 @@ void GarageDoor::set_state(DoorCommand cmd)
 			break;
 		case (DoorCommand::STOP):
 			//state = GarageDoorState::OPENING;
+			if (state == GarageDoorState::CLOSED)
+			{
+				state = GarageDoorState::OPEN;
+			} else if (state == GarageDoorState::OPEN)
+			{
+				state = GarageDoorState::CLOSED;
+			}
 			break;
 		default:
 			break;

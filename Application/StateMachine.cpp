@@ -21,18 +21,26 @@ StateMachine::StateMachine(MQTTService& mqtt):
 	mqtt(mqtt)
 {};
 
-void StateMachine::blink_wait() const
+void StateMachine::blink_wait()
 {
 	absolute_time_t timeout = make_timeout_time_ms(500);
 	bool led_state = false;
 	bool last_sw1_status = false;
-	while (!btns.both_btn_pressed())
+	while (!btns.both_btn_pressed() && cmd != DoorCommand::CALIBRATE)
 	{
+		mqtt.client_yield();
 		bool current_sw1_status = btns.sw1_pressed();
-		if (current_sw1_status && !last_sw1_status)
+		if ((current_sw1_status && !last_sw1_status))
 		{
 			cout << "Door is not calibrated, please calibrate first" << endl;
 		}
+		if (cmd == DoorCommand::CLOSE || cmd == DoorCommand::OPEN || cmd == DoorCommand::STOP)
+		{
+			cout << "Door is not calibrated, please calibrate first" << endl;
+			cmd_response(false, true, true);
+			cmd = DoorCommand::IDLE;
+		}
+
 		last_sw1_status = current_sw1_status;
 		if (time_reached(timeout))
 		{
@@ -61,7 +69,7 @@ void StateMachine::print_states() const
 	oled.show_status(door.get_door_state_string(), door.get_error_state_string(), door.get_calibration_state_string());
 }
 
-void StateMachine::run(int &mqtt_msg_count)
+void StateMachine::run()
 {
 	if (btns.both_btn_pressed() || cmd == DoorCommand::CALIBRATE)
 	{
@@ -69,40 +77,52 @@ void StateMachine::run(int &mqtt_msg_count)
 		door.start_calibration();
 		leds.set_blink_not_finished();
 		while (btns.both_btn_pressed());
+
 		print_states();
 		cmd = DoorCommand::IDLE;
-		mqtt.publish(door.get_door_state_string() + " | " +
-		         door.get_error_state_string() + " | " +
-		         door.get_calibration_state_string(),
-		         "garage/door/status");
+		send_status();
+		cmd_response(true, false, false);
+
 		return;
 	}
 
-
 	if (btns.sw1_pressed() || cmd != DoorCommand::IDLE)
 	{
-		if (cmd != DoorCommand::IDLE)
-		{
-			door.set_state(cmd);
-			cmd = DoorCommand::IDLE;
-			mqtt_msg_count++;
-		}
 		if (btns.sw1_pressed())
 		{
 			while (btns.sw1_pressed()); //debounce button
 		}
 		if (!door.is_calibrated())
 		{
+			door.reset_state();
+			send_status();
 			cout << "Door is not calibrated, please calibrate first" << endl;
+			cmd_response(false, false,true);
+		}
+		else
+		{
+			if (cmd == DoorCommand::STOP)
+			{
+				cmd_response(true, false, false);
+				send_status();
+				mqtt.publish("Door stopped!", "garage/door/response");
+			}
+			if (cmd == DoorCommand::CLOSE || cmd == DoorCommand::OPEN)
+			{
+				mqtt.publish("Executing command. Door is moving!", "garage/door/response");
+			}
+		}
+
+		if (cmd != DoorCommand::IDLE) //Change door command to prevent endless loop
+		{
+			door.set_state(cmd);
+			cmd = DoorCommand::IDLE;
 		}
 
 		door.operate();
-		/*
-		mqtt.publish(door.get_door_state_string() + " | " +
-		         door.get_error_state_string() + " | " +
-		         door.get_calibration_state_string(),
-		         "garage/door/status");*/
-		send_status();
+
+		//print_states();
+		//send_status();
 		sleep_ms(50);
 	}
 }
@@ -114,6 +134,7 @@ void StateMachine::roll_door()
 	{
 		print_states();
 		send_status();
+		cmd_response(true, false, false);
 		/*
 		mqtt.publish(door.get_door_state_string() + " | " +
 		         door.get_error_state_string() + " | " +
@@ -124,7 +145,10 @@ void StateMachine::roll_door()
 	if (door.is_error_state())
 	{
 		if (!leds.blink_finished()) {
-			blink_wait(); // This will loop until buttons are pressed
+			cmd_response(false, true, true);
+			cmd = DoorCommand::IDLE;
+			door.reset_state();
+			blink_wait(); // This will loop until buttons are pressed or new command is sent
 			leds.set_blink_finished();
 		}
 	}
@@ -191,4 +215,25 @@ void StateMachine::send_status() const
 				 door.get_calibration_state_string(),
 				 "garage/door/status");
 }
+
+void StateMachine::cmd_response(const bool success, bool door_stuck, bool need_calibrated) const
+{
+	if (success)
+	{
+		mqtt.publish("Command executed successfully!","garage/door/response");
+	}
+	else
+	{
+		mqtt.publish("Error - Failed to execute command.", "garage/door/response");
+	}
+	if (door_stuck)
+	{
+		mqtt.publish ("Door is stuck.", "garage/door/response");
+	}
+	if (need_calibrated)
+	{
+		mqtt.publish("Need calibrating before running!","garage/door/response");
+	}
+}
+
 

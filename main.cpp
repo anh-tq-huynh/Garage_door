@@ -135,7 +135,6 @@ int main()
 	MQTTService mqtt(SSID, PASSWORD);
 	mqtt.connect_tcp();
 	mqtt.connect_mqtt();
-	int mqtt_msg_count = 0;
 
 
 	StateMachine sm(mqtt);
@@ -146,7 +145,7 @@ int main()
 
 	while (true) {
 		mqtt.client_yield();
-		sm.run(mqtt_msg_count);
+		sm.run();
 		sm.roll_door();
 	}
 }
