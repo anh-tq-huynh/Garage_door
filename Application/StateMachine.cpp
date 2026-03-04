@@ -3,14 +3,22 @@
 //
 
 #include "StateMachine.h"
-
+#include "MQTTService.h"
+#define CLOSE_CMD "CLOSE"
+#define OPEN_CMD "OPEN"
+#define STOP_CMD "STOP"
+#define CALIBRATE_CMD "CALIBRATE"
+#include <algorithm>
+#include <cstring>
 #include <iostream>
+#include <stdlib.h>
 using namespace std;
 
-StateMachine::StateMachine():
-	door(2,3,6,13,16,17,27,28),
+StateMachine::StateMachine(MQTTService& mqtt):
+	door(2,3,6,13,4,5,27,28),
 	btns (9,7,8), //sw2,0,1
-	leds(20,22)
+	leds(20,22),
+	mqtt(mqtt)
 {};
 
 void StateMachine::blink_wait() const
@@ -53,26 +61,48 @@ void StateMachine::print_states() const
 	oled.show_status(door.get_door_state_string(), door.get_error_state_string(), door.get_calibration_state_string());
 }
 
-void StateMachine::run()
+void StateMachine::run(int &mqtt_msg_count)
 {
-	if (btns.both_btn_pressed())
+	if (btns.both_btn_pressed() || cmd == DoorCommand::CALIBRATE)
 	{
 		leds.leds_off();
 		door.start_calibration();
 		leds.set_blink_not_finished();
 		while (btns.both_btn_pressed());
 		print_states();
+		cmd = DoorCommand::IDLE;
+		mqtt.publish(door.get_door_state_string() + " | " +
+		         door.get_error_state_string() + " | " +
+		         door.get_calibration_state_string(),
+		         "garage/door/status");
 		return;
 	}
 
-	if (btns.sw1_pressed())
+
+	if (btns.sw1_pressed() || cmd != DoorCommand::IDLE)
 	{
+		if (cmd != DoorCommand::IDLE)
+		{
+			door.set_state(cmd);
+			cmd = DoorCommand::IDLE;
+			mqtt_msg_count++;
+		}
+		if (btns.sw1_pressed())
+		{
+			while (btns.sw1_pressed()); //debounce button
+		}
 		if (!door.is_calibrated())
 		{
 			cout << "Door is not calibrated, please calibrate first" << endl;
 		}
-		while (btns.sw1_pressed()); //debounce button
+
 		door.operate();
+		/*
+		mqtt.publish(door.get_door_state_string() + " | " +
+		         door.get_error_state_string() + " | " +
+		         door.get_calibration_state_string(),
+		         "garage/door/status");*/
+		send_status();
 		sleep_ms(50);
 	}
 }
@@ -83,7 +113,14 @@ void StateMachine::roll_door()
 	if (roll_end)
 	{
 		print_states();
+		send_status();
+		/*
+		mqtt.publish(door.get_door_state_string() + " | " +
+		         door.get_error_state_string() + " | " +
+		         door.get_calibration_state_string(),
+		         "garage/door/status");*/
 	}
+
 	if (door.is_error_state())
 	{
 		if (!leds.blink_finished()) {
@@ -91,5 +128,67 @@ void StateMachine::roll_door()
 			leds.set_blink_finished();
 		}
 	}
-
 };
+/*
+void StateMachine::handle_mqtt_command(const char* payload)
+{
+	string cmd(payload);
+	cout << "[MQTT] Command received: '" << cmd << "'" << endl;
+
+	if (!door.is_calibrated()) {
+		cout << "[MQTT] Door not calibrated, ignoring command." << endl;
+		mqtt.publish("Not calibrated", "garage/door/status");
+		return;
+	}
+
+	if (cmd == "OPEN") {
+		door.open();
+	} else if (cmd == "CLOSE") {
+		door.close();
+	} else if (cmd == "STOP") {
+		door.stop();
+	} else if (cmd == "CALIBRATE") {
+		door.start_calibration();
+	} else {
+		cout << "[MQTT] Unknown command: " << cmd << endl;
+		return;
+	}
+
+	print_states();
+	mqtt.publish(door.get_door_state_string() + " | " +
+	             door.get_error_state_string() + " | " +
+	             door.get_calibration_state_string(),
+	             "garage/door/status");
+}*/
+
+void StateMachine::handle_mqtt_command(const char *payload)
+{
+	string command(payload);
+	transform(command.begin(), command.end(), command.begin(), ::toupper);
+
+	if (command == CLOSE_CMD)
+	{
+		cmd = DoorCommand::CLOSE;
+	}
+	else if (command == OPEN_CMD)
+	{
+		cmd = DoorCommand::OPEN;
+	}
+	else if (command == STOP_CMD)
+	{
+		cmd = DoorCommand::STOP;
+	}
+	else if (command == CALIBRATE_CMD)
+	{
+		cmd = DoorCommand::CALIBRATE;
+	}
+}
+
+void StateMachine::send_status() const
+{
+	mqtt.publish(door.get_door_state_string() + " | " +
+				 door.get_error_state_string() + " | " +
+				 door.get_calibration_state_string(),
+				 "garage/door/status");
+}
+

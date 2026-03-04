@@ -65,6 +65,12 @@ add_executable(${PROJECT_NAME}
         pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTSerializePublish.c
         pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTSubscribeClient.c
         pico-modbus/paho.mqtt.embedded-c/MQTTPacket/src/MQTTUnsubscribeClient.c
+        Application/LocalMemory.cpp
+        Application/LocalMemory.h
+        Hardware/EEPROM.cpp
+        Hardware/EEPROM.h
+
+
 )
 
 # Create map/bin/hex/uf2 files

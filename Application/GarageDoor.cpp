@@ -6,6 +6,8 @@
 
 #include <iostream>
 #include "pico/time.h"
+
+
 using namespace std;
 
 GarageDoor::GarageDoor(int motorA, int motorB, int motorC, int motorD,
@@ -15,7 +17,6 @@ GarageDoor::GarageDoor(int motorA, int motorB, int motorC, int motorD,
 	  limitSwitchLeft(limitSwitchLeft),
 	  limitSwitchRight(limitSwitchRight),
 	  encoder(encoderA, encoderB)
-	  //leds(led1, led2)
 {
 }
 
@@ -243,3 +244,21 @@ void GarageDoor::reset_state()
 {
 	state = GarageDoorState::UNCALIBRATED;
 }
+void GarageDoor::set_state(DoorCommand cmd)
+{
+	switch (cmd)
+	{
+		case (DoorCommand::CLOSE):
+			state = GarageDoorState::OPEN; //Door is now open -> need to close
+			break;
+		case(DoorCommand::OPEN):
+			state = GarageDoorState::CLOSED; //Door is now closed -> need to open
+			break;
+		case (DoorCommand::STOP):
+			//state = GarageDoorState::OPENING;
+			break;
+		default:
+			break;
+	}
+}
+

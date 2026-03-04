@@ -6,6 +6,7 @@
 #include "../private.h"
 #include <string>
 #include <iostream>
+#include "StateMachine.h"
 
 #define MAX_RETRIES 5
 
@@ -107,13 +108,57 @@ void messageArrived(const MQTT::MessageData &md)
 void MQTTService::subscribe(const char* topic)
 {
 	//rc = client.subscribe(topic, MQTT::QOS2, reinterpret_cast<MQTT::Client<IPStack, Countdown>::messageHandler>(messageArrived));
-	rc = client.subscribe(topic, MQTT::QOS1, reinterpret_cast<MQTT::Client<IPStack, Countdown>::messageHandler>(messageArrived));
+	//rc = client.subscribe(topic, MQTT::QOS1, reinterpret_cast<MQTT::Client<IPStack, Countdown>::messageHandler>(messageArrived));
+	rc = client.subscribe(topic, MQTT::QOS1, static_message_arrived);
 	if (rc != 0)
 	{
 		cout << "rc from MQTT subscribe is " << rc << endl;
 	}
 	cout << "MQTT subsribed" << endl;
 }
+
+void MQTTService::publish(const string &msg, const char* topic)
+{
+	char buf[256];
+	strncpy(buf, msg.c_str(), sizeof(buf));
+	buf[sizeof(buf) - 1] = '\0';
+
+	MQTT::Message message{};
+	message.retained   = false;
+	message.dup        = false;
+	message.qos        = MQTT::QOS1;
+	message.payload    = static_cast<void*>(buf);
+	message.payloadlen = strlen(buf) + 1;
+
+	rc = client.publish(topic, message);
+	if (rc != 0) {
+		cout << "[MQTT] Publish failed, rc=" << rc << endl;
+	}
+}
+
+void MQTTService::set_state_machine(StateMachine *sm) {
+	state_machine = sm;
+}
+StateMachine* MQTTService::state_machine = nullptr;
+
+void MQTTService::static_message_arrived(MQTT::MessageData& md) {
+	char buf[256] = {};
+	size_t len = md.message.payloadlen < sizeof(buf)-1
+				 ? md.message.payloadlen : sizeof(buf)-1;
+	memcpy(buf, md.message.payload, len);
+	buf[len] = '\0';
+
+	cout << "[MQTT] Command received: " << buf << endl;
+
+	if (state_machine != nullptr) {
+		state_machine->handle_mqtt_command(buf);
+	}
+}
+
+
+
+
+
 
 void MQTTService::send_message(const string &msg, const char* topic)
 {
@@ -139,7 +184,11 @@ void MQTTService::send_message(const string &msg, const char* topic)
 
 void MQTTService::client_yield()
 {
-	client.yield(100); // socket that client uses calls cyw43_arch_poll()
+	cyw43_arch_poll(); // called every loop to keep Wi-Fi stack alive
+	if (time_reached(yield_timer)) {
+		client.yield(1); // process incoming MQTT packets
+		yield_timer = make_timeout_time_ms(50);
+	}
 }
 
 
@@ -216,5 +265,10 @@ void MQTTService::send_message(const string &msg, const char* topic)
 	}
 }
 */
+
+int MQTTService::get_msg_count()
+{
+	return msg_count;
+}
 
 

@@ -93,7 +93,7 @@ int main()
 	}
 
 }*/
-
+/*
 int main () //Test MQTT connection
 {
 	stdio_init_all();
@@ -125,5 +125,29 @@ int main () //Test MQTT connection
 		}
 	}
 }
+*/
 
+int main()
+{
+	stdio_init_all();
+	sleep_ms(3000);
+
+	MQTTService mqtt(SSID, PASSWORD);
+	mqtt.connect_tcp();
+	mqtt.connect_mqtt();
+	int mqtt_msg_count = 0;
+
+
+	StateMachine sm(mqtt);
+	mqtt.set_state_machine(&sm);
+	mqtt.subscribe("garage/door/command");
+
+	welcome_text();
+
+	while (true) {
+		mqtt.client_yield();
+		sm.run(mqtt_msg_count);
+		sm.roll_door();
+	}
+}
 
