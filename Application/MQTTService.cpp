@@ -27,7 +27,7 @@ void MQTTService::connect_mqtt()
 	rc = client.connect(data);
 	while (rc != 0 && retry_count <= MAX_RETRIES)
 	{
-		cout << "Connect to MQTT failed. Attempt " << retry_count;
+		cout << "Connect to MQTT failed. Attempt " << retry_count << endl;
 		retry_count++;
 		tight_loop_contents();
 		rc = client.connect(data);
@@ -35,11 +35,12 @@ void MQTTService::connect_mqtt()
 	}
 	if (retry_count > MAX_RETRIES)
 	{
-		cout << "MQTT connect failed after 5 attempts.";
+		cout << "MQTT connect failed after 5 attempts." << endl;
+		/*
 		while (true)
 		{
 			tight_loop_contents();
-		}
+		}*/
 	}
 	cout << "MQTT is connected." << endl;
 	mqtt_is_connect = true;
@@ -79,10 +80,10 @@ void MQTTService::connect_tcp()
 
 	cout << "TCP connect failed after " << MAX_RETRIES
 		 << " attempts. Check broker IP and Wi-Fi." << endl;
-	while (true)
+	/*while (true)
 	{
 		tight_loop_contents();
-	}
+	}*/
 }
 
 
@@ -119,6 +120,10 @@ void MQTTService::subscribe(const char* topic)
 
 void MQTTService::publish(const string &msg, const char* topic)
 {
+	if (!tcp_is_connect || !mqtt_is_connect)
+	{
+		return;
+	}
 	char buf[256];
 	strncpy(buf, msg.c_str(), sizeof(buf));
 	buf[sizeof(buf) - 1] = '\0';
@@ -155,13 +160,12 @@ void MQTTService::static_message_arrived(MQTT::MessageData& md) {
 	}
 }
 
-
-
-
-
-
 void MQTTService::send_message(const string &msg, const char* topic)
 {
+	if (!tcp_is_connect || !mqtt_is_connect)
+	{
+		return;
+	}
 	if (time_reached(mqtt_send))
 	{
 		mqtt_send = delayed_by_ms(mqtt_send, 2000);
@@ -185,9 +189,12 @@ void MQTTService::send_message(const string &msg, const char* topic)
 void MQTTService::client_yield()
 {
 	cyw43_arch_poll(); // called every loop to keep Wi-Fi stack alive
-	if (time_reached(yield_timer)) {
-		client.yield(1); // process incoming MQTT packets
-		yield_timer = make_timeout_time_ms(50);
+	if (tcp_is_connect && mqtt_is_connected())
+	{
+		if (time_reached(yield_timer)) {
+			client.yield(1); // process incoming MQTT packets
+			yield_timer = make_timeout_time_ms(50);
+		}
 	}
 }
 
@@ -270,5 +277,11 @@ int MQTTService::get_msg_count()
 {
 	return msg_count;
 }
+
+bool MQTTService::mqtt_is_connected() const
+{
+	return mqtt_is_connect;
+}
+
 
 

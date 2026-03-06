@@ -20,7 +20,7 @@ enum class GarageDoorState {
 
 enum class DoorCommand
 {
-	CLOSE, OPEN, STOP, CALIBRATE, IDLE
+	CLOSE, OPEN, STOP, CALIBRATE, IDLE, MOVE_TO_TARGET
 };
 
 class GarageDoor {
@@ -45,6 +45,8 @@ public:
 		void    reset_state();
 		void    free_encoder_events();
 		void    set_state(DoorCommand cmd);
+		int get_last_dir() const;
+		void set_target_steps(int percentage);
 private:
     StepperMotor motor;
     // when I say "Left", it represents the side has a nail on the left.
@@ -52,6 +54,7 @@ private:
     LimitSwitch   limitSwitchLeft;
     LimitSwitch   limitSwitchRight;
     RotaryEncoder encoder;
+    int           target;
 
 
     GarageDoorState state=GarageDoorState::UNCALIBRATED;
@@ -66,6 +69,7 @@ private:
 
     void drive_to_limit(LimitSwitch& limit, int direction);
     bool check_if_stuck(bool changed);
+
 
 };
 

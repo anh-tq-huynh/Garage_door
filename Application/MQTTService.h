@@ -18,6 +18,7 @@ class MQTTService
 		MQTTService(const string &ssid, const string &pwd);
 		void connect_mqtt();
 		void connect_tcp();
+		bool mqtt_is_connected() const;
 
 		void send_message(const string &msg, const char* topic);
 		void subscribe(const char* topic);
