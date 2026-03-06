@@ -99,6 +99,7 @@ void GarageDoor::start_calibration() {
     calibrated = true;
     state = GarageDoorState::CLOSED;
     std::cout<<"Total steps:"<<total_steps_calibration<<std::endl;
+	set_target_steps(100);
 
 }
 
@@ -158,7 +159,6 @@ void GarageDoor::operate() {
         case GarageDoorState::CLOSING:
             // Door is current opening or closing → door stops
             stop();
-    		print_states();
             state = GarageDoorState::STOPPED;
             break;
 
@@ -197,9 +197,17 @@ bool GarageDoor::update() { //return true means the end of movement, return fals
     if (state == GarageDoorState::OPENING) {
         if (current_step <= margin) {
             motor.stop();
-            state = GarageDoorState::OPEN;
+        	state = GarageDoorState::OPEN;
+        	cout << "current_step <= margin"<<endl;
             return true;
         }
+    	if (current_step <=  target)
+    	{
+    		motor.stop();
+    		cout << "current_step <= target"<<endl;
+    		state = GarageDoorState::STOPPED;
+    		return true;
+    	}
 
         motor.step(-1); // toward right
         current_step--;
@@ -211,9 +219,17 @@ bool GarageDoor::update() { //return true means the end of movement, return fals
     } else if (state == GarageDoorState::CLOSING) {
         if (current_step >= total_steps_calibration) {
             motor.stop();
-            state = GarageDoorState::CLOSED;
+        	state = GarageDoorState::CLOSED;
+        	cout << "current_step >= total steps"<<endl;
             return true;
         }
+    	if (current_step >= target)
+    	{
+    		motor.stop();
+    		state = GarageDoorState::STOPPED;
+    		cout << "current_step >= target"<<endl;
+    		return true;
+    	}
 
         motor.step(1); // toward left
         current_step++;
@@ -266,8 +282,26 @@ void GarageDoor::set_state(DoorCommand cmd)
 				state = GarageDoorState::CLOSED;
 			}
 			break;
+		case(DoorCommand::MOVE_TO_TARGET):
+			if (current_step >= target)
+			{
+				state = GarageDoorState::CLOSED; //It is in the closing direction, need to open
+			}else if (current_step < target)
+			{
+				state = GarageDoorState::OPEN;
+			}
 		default:
 			break;
 	}
 }
+int GarageDoor::get_last_dir() const
+{
+	return last_direction;
+}
+
+void GarageDoor::set_target_steps(int percentage)
+{
+	target = (total_steps_calibration * (100 - percentage)/100);
+}
+
 

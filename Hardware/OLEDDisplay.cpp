@@ -13,9 +13,9 @@ OLEDDisplay::OLEDDisplay() :
 
 void OLEDDisplay::show_status(const std::string &door_state, const std::string &error_state, const std::string &calib_state) {
     display.fill(0);
-    display.text("Door:  " + door_state,  0, 4);
-    display.text("Error: " + error_state, 0, 24);
-    display.text("Calib: " + calib_state, 0, 44);
+    display.text("Door: " + door_state,  0, 4);
+    display.text("Error:" + error_state, 0, 24);
+    display.text(calib_state, 0, 44);
     display.show();
 }
 
@@ -23,3 +23,4 @@ void OLEDDisplay::clear() {
     display.fill(0);
     display.show();
 }
+
