@@ -43,7 +43,7 @@ void StateMachine::blink_wait()
 		if (cmd == DoorCommand::CLOSE || cmd == DoorCommand::OPEN || cmd == DoorCommand::STOP)
 		{
 			cout << "Door is not calibrated, please calibrate first" << endl;
-			cmd_response(false, true, true);
+			//cmd_response(false, true, true);
 			cmd = DoorCommand::IDLE;
 		}
 
@@ -64,23 +64,31 @@ void StateMachine::blink_wait()
 	}
 	leds.leds_off();
 }
+std::string StateMachine::get_door_state_string() const {
+	if (state == MachineState::OPEN) return "Open";
+	if (state == MachineState::CLOSE) return "Closed";
+	if (!door.is_calibrated()) return "Unknown";
+	return "In between";
+}
 
-void StateMachine::print_states()
+std::string StateMachine::get_error_state_string() const {
+	if (state == MachineState::ERROR) return "Door stuck";
+	return "Normal";
+}
+
+std::string StateMachine::get_calibration_state_string() const {
+	return door.is_calibrated() ? "Calibrated" : "Not calibrated";
+}
+
+void StateMachine::print_states(const string &current_state,const string &error,const string &calib)
 {
-	string current_state = door.get_door_state_string();
-	string error = door.get_error_state_string();
-	string calib = door.get_calibration_state_string();
-
 	cout << "DoorState: "<<current_state<<endl;
 	cout << "ErrorState: "<<error<<endl;
 	cout << "CalibrateState: "<<calib<<endl;
 	cout << "===============================\n";
 	cout << "\n";
-
-	oled.show_status(current_state, error, calib);
-	save_status(current_state,error,calib);
 }
-
+/*
 void StateMachine::run()
 {
 	if (btns.both_btn_pressed() || cmd == DoorCommand::CALIBRATE)
@@ -166,38 +174,8 @@ bool StateMachine::roll_door()
 		}
 	}
 	return roll_end;
-};
-/*
-void StateMachine::handle_mqtt_command(const char* payload)
-{
-	string cmd(payload);
-	cout << "[MQTT] Command received: '" << cmd << "'" << endl;
+};*/
 
-	if (!door.is_calibrated()) {
-		cout << "[MQTT] Door not calibrated, ignoring command." << endl;
-		mqtt.publish("Not calibrated", "garage/door/status");
-		return;
-	}
-
-	if (cmd == "OPEN") {
-		door.open();
-	} else if (cmd == "CLOSE") {
-		door.close();
-	} else if (cmd == "STOP") {
-		door.stop();
-	} else if (cmd == "CALIBRATE") {
-		door.start_calibration();
-	} else {
-		cout << "[MQTT] Unknown command: " << cmd << endl;
-		return;
-	}
-
-	print_states();
-	mqtt.publish(door.get_door_state_string() + " | " +
-	             door.get_error_state_string() + " | " +
-	             door.get_calibration_state_string(),
-	             "garage/door/status");
-}*/
 
 void StateMachine::handle_mqtt_command(const char *payload)
 {
@@ -244,40 +222,28 @@ void StateMachine::handle_mqtt_command(const char *payload)
 
 			if (endptr != command.c_str()) {
 				door.set_target_steps(static_cast<int>(target));
+				cmd = DoorCommand::MOVE_TO_TARGET;
+			}
+			else
+			{
+				cout << "Invalid input." << endl;
+				new_cmd_available = false;
 			}
 		}
-		cmd = DoorCommand::MOVE_TO_TARGET;
 	}
+	new_cmd_available = true;
 }
 
 void StateMachine::send_status() const
 {
-	if (!mqtt.mqtt_is_connected()) return;
-	mqtt.publish(door.get_door_state_string() + " | " +
-				 door.get_error_state_string() + " | " +
-				 door.get_calibration_state_string(),
-				 "garage/door/status");
+	if (!mqtt.mqtt_is_connected())
+	{
+		return;
+	}
+	mqtt.send_status(get_door_state_string(), get_error_state_string(), get_calibration_state_string());
 }
 
-void StateMachine::cmd_response(const bool success, bool door_stuck, bool need_calibrated) const
-{
-	if (success)
-	{
-		mqtt.publish("Command executed successfully!","garage/door/response");
-	}
-	else
-	{
-		mqtt.publish("Error - Failed to execute command.", "garage/door/response");
-	}
-	if (door_stuck)
-	{
-		mqtt.publish ("Door is stuck.", "garage/door/response");
-	}
-	if (need_calibrated)
-	{
-		mqtt.publish("Need calibrating before running!","garage/door/response");
-	}
-}
+
 
 void StateMachine::save_status(const string &current_state, const string &error, const string &calib)
 {
@@ -330,9 +296,13 @@ void StateMachine::read_and_parse(uint8_t *array)
 
 void StateMachine::get_latest_state(const string &last_state, const string &error, const string &calib)
 {
-	if (error == "Door stuck" || calib == "Not calibrated")
+	if (calib == "Not calibrated")
 	{
 		this ->state = MachineState::UNCALIBRATED;
+	}
+	else if (error == "Door stuck")
+	{
+		this -> state = MachineState::ERROR;
 	}
 	else
 	{
@@ -350,7 +320,7 @@ void StateMachine::get_latest_state(const string &last_state, const string &erro
 
 		}else if (last_state == "Closed")
 		{
-			this -> state = MachineState::CLOSED;
+			this -> state = MachineState::CLOSE;
 
 		}else if (last_state == "In between - closed")
 		{
@@ -358,7 +328,240 @@ void StateMachine::get_latest_state(const string &last_state, const string &erro
 		}
 		else //last_state == "Unknown"
 		{
-			this -> state = MachineState::UNCALIBRATED; //need to recalibrate to know which direction to run
+			this -> state = MachineState::ERROR; //need to recalibrate to know which direction to run
+		}
+	}
+}
+
+void StateMachine::report_status()
+{
+	string current_state = get_door_state_string();
+	string error = get_error_state_string();
+	string calib = get_calibration_state_string();
+
+	print_states(current_state, error, calib);
+	send_status(); //to MQTT
+	oled.show_status(current_state, error, calib);
+	save_status(current_state,error,calib); //to EEPROM
+}
+
+
+void StateMachine::sw1_toggle_state()
+{
+	switch (state)
+	{
+		//When the next direction is towards Opening
+		case MachineState::CLOSING:
+			state = MachineState::STOPPED_CLOSING;
+			break;
+		case MachineState::STOPPED_CLOSING:
+			state = MachineState::OPEN;
+			break;
+
+		//When the next direction is towards Closing
+		case MachineState::OPENING:
+			state = MachineState::STOPPED_OPENING;
+			break;
+		case MachineState::STOPPED_OPENING:
+			state = MachineState::CLOSE;
+			break;
+
+			//When the door is at its limit
+		case MachineState::OPEN:
+			state = MachineState::CLOSE;
+			break;
+		case MachineState::CLOSE:
+			state = MachineState::OPEN;
+			break;
+		case MachineState::UNCALIBRATED:
+			state = MachineState::UNCALIBRATED;
+			break;
+
+		case MachineState::CALIBRATE:
+			state = MachineState::OPEN;
+			break;
+
+		case MachineState::MOVE_TO_TARGET:
+			if (door.get_last_dir() == -1) // Was opening
+			{
+				state = MachineState::STOPPED_OPENING;
+			}else
+			{
+				state = MachineState::STOPPED_CLOSING;
+			}
+			break;
+		case MachineState::ERROR:
+		case MachineState::IDLE:
+			break;
+	}
+	if (!door.is_calibrated())
+	{
+		state = MachineState::UNCALIBRATED;
+	}
+}
+void StateMachine::set_state_on_cmd()
+{
+	switch (cmd)
+	{
+		case (DoorCommand::CLOSE):
+			state = MachineState::CLOSE;
+			break;
+		case(DoorCommand::OPEN):
+			state = MachineState::OPEN; //Door is now closed -> need to open
+			break;
+		case (DoorCommand::STOP):
+			if (door.get_last_dir() == -1)
+			{
+				state = MachineState::STOPPED_OPENING;
+			}
+			else
+			{
+				state = MachineState::STOPPED_CLOSING;
+			}
+			break;
+		case(DoorCommand::MOVE_TO_TARGET):
+			state = MachineState::MOVE_TO_TARGET;
+		default:
+			break;
+	}
+}
+
+
+bool StateMachine::update_state()
+{
+	if (btns.debounce_sw(2)) //2 switches are pressed
+	{
+		state = MachineState::CALIBRATE;
+		return true;
+	}
+	else if (btns.sw1_pressed()) //sw1 is pressed
+	{
+		while (btns.sw1_pressed()){};
+		sw1_toggle_state();
+		return true;
+	} else if (new_cmd_available)
+	{
+		set_state_on_cmd();
+		cmd = DoorCommand::IDLE;
+		new_cmd_available = false;
+		return true;
+	}
+	return false;
+}
+
+
+
+void StateMachine::run(const bool &eeprom_read)
+{
+	bool new_state = update_state();
+	if (! door.is_calibrated())
+	{
+		oled.show_sw2_sw0();
+	}
+	if (new_state || eeprom_read)
+	{
+		switch (state)
+	{
+		case MachineState::UNCALIBRATED:
+			cout << "Door is not calibrated. Press sw0 and sw2 to calibrate" << endl;
+			oled.show_sw2_sw0();
+			break;
+
+		case MachineState::CALIBRATE:
+				door.start_calibration();
+				state = MachineState::CLOSE;
+				report_status();
+			break;
+		case MachineState::CLOSE:
+			if (!door.is_calibrated())
+			{
+				state = MachineState::UNCALIBRATED;
+			}
+			else if (door.is_error_state())
+			{
+				state = MachineState::ERROR;
+			}
+			else
+			{
+				door.close();
+				movement_done = false;
+				state = MachineState::CLOSING;
+			}
+			break;
+		case MachineState::OPEN:
+			if (!door.is_calibrated())
+			{
+				state = MachineState::UNCALIBRATED;
+			}
+			else if (door.is_error_state())
+			{
+				state = MachineState::ERROR;
+			}
+			else
+			{
+				door.open();
+				movement_done = false;
+				state = MachineState::OPENING;
+			}
+			break;
+		case MachineState::STOPPED_CLOSING:
+		case MachineState::STOPPED_OPENING:
+			if (!door.is_calibrated())
+			{
+				state = MachineState::UNCALIBRATED;
+			}
+			else if (door.is_error_state())
+			{
+				state = MachineState::ERROR;
+			}
+			else
+			{
+				door.stop();
+				movement_done = false;
+			}
+			break;
+		case MachineState::ERROR:
+			cout << "Error - Door is stuck";
+			report_status();
+			break;
+		case MachineState::MOVE_TO_TARGET:
+			if (!door.is_calibrated())
+			{
+				state = MachineState::UNCALIBRATED;
+			}
+			else if (door.is_error_state())
+			{
+				state = MachineState::ERROR;
+			}
+			else
+			{
+				door.move_to_target();
+				movement_done = false;
+			}
+			break;
+		case MachineState::IDLE:
+			break;
+	}
+	}
+	if (door.is_error_state())
+	{
+		if (time_reached(next_blink)) {
+			leds.leds_are_on() ? leds.leds_off() : leds.leds_on();
+			next_blink = make_timeout_time_ms(500);
+		}
+	}
+	if (door.is_calibrated())
+	{
+		if (!movement_done)
+		{
+			bool roll_door = door.execute();
+			if (roll_door)
+			{
+				movement_done = true;
+				if (state == MachineState::OPENING) state = MachineState::OPEN;
+				if (state == MachineState::CLOSING) state = MachineState::CLOSE;
+				report_status();
+			}
 		}
 	}
 }

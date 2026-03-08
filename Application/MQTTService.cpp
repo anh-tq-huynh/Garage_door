@@ -284,4 +284,33 @@ bool MQTTService::mqtt_is_connected() const
 }
 
 
+void MQTTService::cmd_response(const bool success, bool door_stuck, bool need_calibrated)
+{
+	if (success)
+	{
+		publish("Command executed successfully!","garage/door/response");
+	}
+	else
+	{
+		publish("Error - Failed to execute command.", "garage/door/response");
+	}
+	if (door_stuck)
+	{
+		publish ("Door is stuck.", "garage/door/response");
+	}
+	if (need_calibrated)
+	{
+		publish("Need calibrating before running!","garage/door/response");
+	}
+}
+
+void MQTTService::send_status(const string &door_state, const string &error, const string &calib)
+{
+	if (!mqtt_is_connected()) return;
+	publish(door_state + " | " +
+				 error + " | " +
+				 calib,
+				 "garage/door/status");
+}
+
 

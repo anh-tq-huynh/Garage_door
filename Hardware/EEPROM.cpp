@@ -28,7 +28,7 @@ int EEPROM::write_byte(const uint8_t *src, int payload_size, int wr_mem_addr) co
 	unsigned int bytes_sent = eeprom_i2c_device->write(data_reg,payload_size +2);
 	sleep_ms(10);
 
-	if (bytes_sent == payload_size)
+	if (bytes_sent != payload_size)
 	{
 		return 1;
 	}
@@ -43,11 +43,11 @@ int EEPROM::read_byte(uint8_t *dest, int payload_size, int rd_mem_addr) const
 
 	unsigned int result = eeprom_i2c_device->transaction(data_reg,2,dest,payload_size);
 
-	if (result < 0 || result < payload_size)
+	if (result < payload_size)
 	{
-		return 0;
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 
 

@@ -104,40 +104,90 @@ void GarageDoor::start_calibration() {
 }
 
 void GarageDoor::open() {
-    // if not calibrated or already open, do nothing
-    if (!calibrated || state == GarageDoorState::OPEN) {
-        return;
-    }
-
     last_direction = -1;
-    state = GarageDoorState::OPENING;
+	set_target_steps(100);
     stuck_counter = 0;
 }
 
 void GarageDoor::close() {
-    if (!calibrated || state == GarageDoorState::CLOSED) {
-        return;
-    }
-
     last_direction = 1;
-    state = GarageDoorState::CLOSING;
+	set_target_steps(0);
     stuck_counter = 0;
 }
 
-void GarageDoor::stop() {
-    if (state == GarageDoorState::OPENING || state == GarageDoorState::CLOSING) {
-        motor.stop();
-        state = GarageDoorState::STOPPED;
-    }
-}
-void GarageDoor::print_states() const
+void GarageDoor::move_to_target()
 {
-	cout << "DoorState: "<<get_door_state_string()<<endl;
-	cout << "ErrorState: "<<get_error_state_string()<<endl;
-	cout << "CalibrateState: "<<get_calibration_state_string()<<endl;
-	cout << "===============================\n";
-	cout << "\n";
+	if (current_step >= target)
+	{
+		open(); //It was in the closing direction, need to open
+	}else if (current_step < target)
+	{
+		close(); //It was in the opening direction, need to close
+	}
 }
+
+
+void GarageDoor::stop() {
+	motor.stop();
+	if (last_direction == -1) {  // before was opening (towards right)
+		last_direction = 1;      // now towards left, closing
+	} else {                     // before was closing (towards left)
+		last_direction = -1;     // now towards right, opening
+	}
+	stuck_counter = 0 ;
+}
+
+bool GarageDoor::execute()
+{
+	int event = 0;
+	bool encoder_changed = encoder.try_get_event(event);
+	if (last_direction == -1) {
+		if (current_step <= margin) {
+			motor.stop();
+			return true;
+		}
+		if (current_step <=  target)
+		{
+			motor.stop();
+			return true;
+		}
+
+		motor.step(-1); // toward right
+		current_step--;
+
+		if (check_if_stuck(encoder_changed))
+		{
+			return true;
+		}
+	} else if (last_direction == 1) {
+		if (current_step >= total_steps_calibration) {
+			motor.stop();
+			return true;
+		}
+		if (current_step >= target)
+		{
+			motor.stop();
+			return true;
+		}
+
+		motor.step(1); // toward left
+		current_step++;
+
+		if (check_if_stuck(encoder_changed))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
+
+GarageDoorState GarageDoor::get_last_state() const
+{
+	return state;
+}
+
 
 void GarageDoor::operate() {
     if (!calibrated) {

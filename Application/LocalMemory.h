@@ -14,6 +14,7 @@ class LocalMemory
 
 		//Write
 		void write_new_entry(const char *array);
+		void write_addr_zero(const char *array) const;
 
 		//Preparation for writing
 		static void encapsulate_i2c_frame (uint8_t *array, int payload_size);
@@ -25,11 +26,11 @@ class LocalMemory
 		//Read
 		bool read_an_entry (uint8_t *array) const;
 		int  read_all_entries(uint8_t *array); //keep reading until invalid entry or full memory (rd_mem_addr == EEPROM_LIMIT)
+		void read_addr_zero(uint8_t *array) const;
 
 		//Check validity of read
 		static bool check_first_char (const uint8_t *array);
 		static bool check_null (const uint8_t *array, int payload_size);
-
 		static bool check_crc (const uint8_t *array, int payload_size);
 		static bool check_read (const char *array, int payload_size);
 

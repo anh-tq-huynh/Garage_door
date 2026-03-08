@@ -24,3 +24,12 @@ void OLEDDisplay::clear() {
     display.show();
 }
 
+void OLEDDisplay::show_sw2_sw0()
+{
+	display.fill(0);
+	display.text("Press SW0 & SW2", 0, 4);
+	display.text("to calibrate", 10,24);
+	display.show();
+}
+
+

@@ -6,7 +6,7 @@
 #define GARAGE_DOOR_STATEMACHINE_H
 #include "GarageDoor.h"
 #include "../Hardware/Leds.h"
-#include "../Hardware/SwitchPair.h"
+#include "../Hardware/Switches.h"
 #include "../Hardware/OLEDDisplay.h"
 #include "MQTTService.h"
 #include "LocalMemory.h"
@@ -14,9 +14,13 @@
 enum class MachineState
 {
 	IDLE,
+	ERROR,
 	UNCALIBRATED,
+	CALIBRATE,
 	OPEN,
-	CLOSED,
+	CLOSE,
+	OPENING,
+	CLOSING,
 	STOPPED_OPENING, //Got stopped during opening
 	STOPPED_CLOSING,  //Got stopped during closing
 	MOVE_TO_TARGET
@@ -28,17 +32,23 @@ class StateMachine
 		StateMachine(MQTTService& mqtt);
 
 		//Machine state
-		void print_states();
+		static void print_states(const string &current_state,const string &error,const string &calib);
+		std::string get_door_state_string() const;
+		std::string get_error_state_string() const;
+		std::string get_calibration_state_string() const;
 
 		//Machine operation
 		bool roll_door();
-		void run();
+		void run(const bool &eeprom_read);
+		bool update_state();
 		void blink_wait();
+		void sw1_toggle_state();
+		void report_status(); //Report status locally and via MQTT
 
 		//MQTT
 		void handle_mqtt_command(const char* payload);
 		void send_status() const;
-		void cmd_response(bool success, bool door_stuck, bool need_calibrate) const;
+		void set_state_on_cmd();
 
 		//Local Memory
 		void save_status(const string &state, const string &error, const string &calib);
@@ -46,13 +56,16 @@ class StateMachine
 		void get_latest_state(const string &state, const string &error, const string &calib);
 	private:
 		GarageDoor door;
-		SwitchPair btns;
+		Switches btns;
 		Leds leds;
 		mutable OLEDDisplay oled;
 		MQTTService& mqtt;
 		DoorCommand cmd = DoorCommand::IDLE;
 		LocalMemory memory;
-		MachineState state = MachineState::IDLE;
+		MachineState state = MachineState::UNCALIBRATED;
+		bool new_cmd_available = false;
+		absolute_time_t next_blink = get_absolute_time();
+		bool movement_done = false;
 };
 
 

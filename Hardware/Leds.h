@@ -14,13 +14,15 @@ class Leds
 		bool blink_finished() const;
 		void set_blink_finished();
 		void set_blink_not_finished();
-		void leds_on() const;
-		void leds_off() const;
+		void leds_on();
+		void leds_off();
+		bool leds_are_on() const;
 
 	private:
 		GPIOPin led1;
 		GPIOPin led2;
 		bool blink_done = true;
+		bool leds_state;
 };
 
 

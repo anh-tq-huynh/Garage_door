@@ -30,6 +30,9 @@ class MQTTService
 		void set_state_machine(StateMachine* sm);
 		int get_msg_count();
 
+		void send_status(const string &door_state, const string &error, const string &calib);
+		void cmd_response(bool success, bool door_stuck, bool need_calibrated);
+
 	private:
 		string ssid;
 		string pwd;

@@ -96,7 +96,7 @@ int main()
 
 }*/
 
-/*
+
 int main()
 {
 	stdio_init_all();
@@ -112,13 +112,13 @@ int main()
 	mqtt.subscribe("garage/door/command");
 
 	welcome_text();
+	bool eeprom_read = false;
 
 	while (true) {
 		mqtt.client_yield();
-		sm.run();
-		sm.roll_door();
+		sm.run(eeprom_read);
 	}
-}*/
+}
 /*
 int main ()
 {
@@ -198,7 +198,7 @@ int main ()
 	}
 }*/
 
-
+/*
 int main ()
 {
 	stdio_init_all();
@@ -242,4 +242,4 @@ int main ()
 		sm.roll_door();
 
 	}
-}
+}*/
