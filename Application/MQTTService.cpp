@@ -42,8 +42,11 @@ void MQTTService::connect_mqtt()
 			tight_loop_contents();
 		}*/
 	}
-	cout << "MQTT is connected." << endl;
-	mqtt_is_connect = true;
+	if (rc == 0 )
+	{
+		cout << "MQTT is connected." << endl;
+		mqtt_is_connect = true;
+	}
 }
 
 void MQTTService::connect_tcp()

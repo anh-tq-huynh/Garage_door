@@ -10,23 +10,11 @@
 #define ADDR_ZERO 0
 #include <cstring>
 #include <iostream>
+#include <sstream>
 using namespace std;
 #include "GarageDoor.h"
+#include "StateMachine.h"
 
-#define CALIBRATED_STATUS "CALIBRATE"
-#define OPEN_STATUS "OPEN"
-#define CLOSED_STATUS "CLOSED"
-#define STOPPED_OPEN_STATUS "STOPPED_OPEN" //STOPPED WHEN TRYING TO OPEN GARAGE_DOOR
-#define STOPPED_CLOSED_STATUS "STOPPED_CLOSED"
-#define ERROR_STATUS "ERROR"
-#define OPENING_STATUS "OPENING"
-#define CLOSING_STATUS "CLOSING"
-
-#define ERROR_YES "STUCK"
-#define ERROR_NO "NORMAL"
-
-#define CALIBRATED_YES "CALIBRATED"
-#define CALIBRATED_NO "NOT CALIBRATED"
 void LocalMemory::write_new_entry(const char *array)
 {
 	uint8_t to_write[PAGE_SIZE];
@@ -188,7 +176,7 @@ bool LocalMemory:: read_an_entry (uint8_t *array) const
 	int read_size = static_cast<int>(strlen(temp_buffer)) + 3;
 
 	strcpy(reinterpret_cast<char *>(array), temp_buffer);
-	cout << array;
+	//cout << array << endl;
 	const bool read_is_valid = check_read(temp_buffer, read_size);
 	return read_is_valid;
 }
@@ -223,15 +211,16 @@ int LocalMemory:: read_all_entries(uint8_t *array) //keep reading until invalid 
 	if (array != nullptr)
 	{
 		printf("\nLast state: %s\n", reinterpret_cast<char *>(array));
+		return 1;
 	}
-	return rd_mem_addr;
+	return 0;
 }
 
 
 void LocalMemory::read_addr_zero(uint8_t *array) const
 {
 	char temp_buffer[PAGE_SIZE];
-	eeprom.read_byte(reinterpret_cast<uint8_t *>(temp_buffer),PAGE_SIZE,rd_mem_addr);
+	eeprom.read_byte(reinterpret_cast<uint8_t *>(temp_buffer),PAGE_SIZE,ADDR_ZERO);
 
 	int read_size = static_cast<int>(strlen(temp_buffer)) + 3;
 
@@ -239,7 +228,126 @@ void LocalMemory::read_addr_zero(uint8_t *array) const
 	{
 		strcpy(reinterpret_cast<char *>(array), temp_buffer);
 	}
-	cout << array;
+	//cout << array;
+
+}
+
+bool LocalMemory::get_steps(uint8_t *array, int &total_steps, int &current_steps) const
+{
+	read_addr_zero(array);
+	ostringstream convert;
+	for (int i = 0; array[i] != '\0'; i++)
+	{
+		convert << array[i];
+	}
+	convert << '\0';
+
+	string s_array = convert.str();
+	size_t total_steps_start{0};
+	string::size_type total_steps_end = s_array.find(' ', total_steps_start);
+	size_t total_steps_size = total_steps_end - total_steps_start;
+	string s_total_steps = s_array.substr(total_steps_start, total_steps_size);
+	cout << "Step data: " << s_array << endl;;
+
+	if ((total_steps = convert_str_to_int(s_total_steps)) != -1) //only continue if success
+	{
+		string s_current_steps = s_array.substr(total_steps_end +1);
+		current_steps = convert_str_to_int(s_current_steps);
+	}
+	if (total_steps == -1 || current_steps == -1)
+	{
+		total_steps = 0;
+		current_steps = 0;
+		return false;
+	}
+
+	return true;
+
+}
+
+int LocalMemory::convert_str_to_int(const string &str)
+{
+	char* endptr;
+	int converted = strtol(str.c_str(), &endptr, 10);
+
+	if (endptr != str.c_str()) {
+		return converted;
+	}
+	cout << "Invalid data." << endl;
+	return -1;
+}
+
+MachineState LocalMemory::read_all_and_parse(uint8_t * array)
+{
+	if (read_all_entries(array)) //If there are data in EEPROM
+	{
+		ostringstream convert;
+		for (int i = 0; array[i] != '\0'; i++)
+		{
+			convert << array[i];
+		}
+		convert << '\0';
+		string s_array = convert.str();
+
+		if (s_array == "MOVING")
+		{
+			return MachineState::UNCALIBRATED;
+		}
+
+		size_t state_start{0};
+		string::size_type state_end = s_array.find('|', state_start);
+		size_t state_size = state_end - state_start;
+		string last_state = s_array.substr(state_start, state_size);
+
+		size_t error_start{state_end + 1};
+		size_t error_end = s_array.find('|',error_start);
+		size_t error_size = error_end - error_start;
+		string error = s_array.substr(error_start,error_size);
+
+		size_t calib_start{error_end + 1};
+		size_t calib_end = s_array.find('\0',calib_start);
+		size_t calib_size = calib_end - calib_start;
+		string calib = s_array.substr(calib_start,calib_size);
+
+		return update_latest_state(last_state,error,calib);
+	}
+	return MachineState::IDLE;
+}
+
+MachineState LocalMemory::update_latest_state(const string &last_state, const string &error, const string &calib)
+{
+	if (calib == "Not calibrated")
+	{
+		return MachineState::UNCALIBRATED;
+	}
+	else if (error == "Door stuck")
+	{
+		return MachineState::ERROR;
+	}
+	else
+	{
+		if (last_state == "In between - closing")
+		{
+			return MachineState::STOPPED_CLOSING;
+
+		} else if (last_state == "In between - opening")
+		{
+			return MachineState::STOPPED_OPENING;
+
+		}else if (last_state == "Open")
+		{
+			return MachineState::OPEN;
+
+		}else if (last_state == "Closed")
+		{
+			return MachineState::CLOSE;
+
+		}
+		else //last_state == "Unknown"
+		{
+			return MachineState::UNCALIBRATED; //need to recalibrate to know which direction to run
+		}
+	}
 }
 
 

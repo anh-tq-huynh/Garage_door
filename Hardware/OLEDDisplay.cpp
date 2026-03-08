@@ -32,4 +32,13 @@ void OLEDDisplay::show_sw2_sw0()
 	display.show();
 }
 
-
+void OLEDDisplay::waiting_screen()
+{
+	display.fill(0);
+	display.text("Waiting for connection", 10, 24);
+	display.text(".",20,44);
+	sleep_ms(10);
+	display.text(".",22,44);
+	sleep_ms(10);
+	display.text(".",24,44);
+}

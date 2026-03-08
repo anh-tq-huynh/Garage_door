@@ -32,6 +32,23 @@ void GarageDoor::drive_to_limit(LimitSwitch &limit, int direction) {
     }
     motor.stop();
 }
+void GarageDoor::set_current_steps(const int &current_steps)
+{
+	this ->current_step = current_steps;
+}
+
+void GarageDoor::set_total_steps(const int &total_steps)
+{
+	this -> total_steps_calibration = total_steps;
+}
+string GarageDoor::get_steps_data() const
+{
+	string total_steps = to_string(total_steps_calibration);
+	string current_steps = to_string(current_step);
+
+	return total_steps + ' ' + current_steps;
+}
+
 
 bool GarageDoor::check_if_stuck(bool changed)
 {
@@ -343,6 +360,10 @@ void GarageDoor::set_state(DoorCommand cmd)
 		default:
 			break;
 	}
+}
+void GarageDoor::set_calibration (bool calib_done)
+{
+	calibrated = calib_done;
 }
 int GarageDoor::get_last_dir() const
 {

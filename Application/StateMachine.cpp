@@ -15,6 +15,7 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#define PAGE_SIZE 64
 using namespace std;
 
 
@@ -26,6 +27,11 @@ StateMachine::StateMachine(MQTTService& mqtt):
 	mqtt(mqtt),
 	memory()
 {};
+
+void StateMachine::waiting_screen() const
+{
+	oled.waiting_screen();
+}
 
 void StateMachine::blink_wait()
 {
@@ -322,16 +328,45 @@ void StateMachine::get_latest_state(const string &last_state, const string &erro
 		{
 			this -> state = MachineState::CLOSE;
 
-		}else if (last_state == "In between - closed")
-		{
-			this -> state = MachineState::STOPPED_CLOSING;
 		}
 		else //last_state == "Unknown"
 		{
-			this -> state = MachineState::ERROR; //need to recalibrate to know which direction to run
+			this -> state = MachineState::UNCALIBRATED; //need to recalibrate to know which direction to run
 		}
 	}
 }
+bool StateMachine::read_eeprom()
+{
+	uint8_t array[PAGE_SIZE];
+	MachineState latest_state = memory.read_all_and_parse(array);
+	if (latest_state == MachineState::IDLE)
+	{
+		eeprom_read_done = false;
+		cout << "No valid step data. Require re-calibration to proceed." <<endl;
+		return false; //No data from EEPROM
+	}
+
+	int total_steps= 0;
+	int current_steps = 0;
+	uint8_t step_data_array[PAGE_SIZE];
+	if (memory.get_steps(step_data_array,total_steps,current_steps))
+	{
+		door.set_total_steps(total_steps);
+		door.set_current_steps(current_steps);
+		door.set_calibration(true);
+		eeprom_read_done = true;
+		state = latest_state;
+		cout << "EEPROM read successfully. Total steps: " << total_steps << ". Current steps: " << current_steps <<endl;
+	}
+	else
+	{
+		door.set_calibration(false);
+		cout << "No valid step data. Require re-calibration to proceed." <<endl;
+		return false;
+	}
+	return true;
+}
+
 
 void StateMachine::report_status()
 {
@@ -339,10 +374,17 @@ void StateMachine::report_status()
 	string error = get_error_state_string();
 	string calib = get_calibration_state_string();
 
+	//Print on serial port
 	print_states(current_state, error, calib);
-	send_status(); //to MQTT
+
+	//Show on OLED
 	oled.show_status(current_state, error, calib);
+
+	send_status(); //to MQTT
 	save_status(current_state,error,calib); //to EEPROM
+	string steps_data = door.get_steps_data();
+	cout << "Writing step data: " << steps_data << endl;
+	memory.write_addr_zero(steps_data.c_str()); //update latest position
 }
 
 
@@ -427,6 +469,7 @@ void StateMachine::set_state_on_cmd()
 }
 
 
+
 bool StateMachine::update_state()
 {
 	if (btns.debounce_sw(2)) //2 switches are pressed
@@ -451,15 +494,19 @@ bool StateMachine::update_state()
 
 
 
-void StateMachine::run(const bool &eeprom_read)
+void StateMachine::run()
 {
 	bool new_state = update_state();
 	if (! door.is_calibrated())
 	{
 		oled.show_sw2_sw0();
 	}
-	if (new_state || eeprom_read)
+	if (new_state || eeprom_read_done)
 	{
+		if (new_state)
+		{
+			memory.write_new_entry("MOVING"); //Write one time to EEPROM to indicate the begin of the movement
+		}
 		switch (state)
 	{
 		case MachineState::UNCALIBRATED:
@@ -517,6 +564,7 @@ void StateMachine::run(const bool &eeprom_read)
 			else
 			{
 				door.stop();
+				report_status();
 				movement_done = false;
 			}
 			break;
@@ -540,8 +588,15 @@ void StateMachine::run(const bool &eeprom_read)
 			}
 			break;
 		case MachineState::IDLE:
+		case MachineState::CLOSING:
+		case MachineState::OPENING:
 			break;
 	}
+		if (eeprom_read_done)
+		{
+			eeprom_read_done = false; //set to false so it won't trigger again after the first time
+			movement_done = true;
+		}
 	}
 	if (door.is_error_state())
 	{
@@ -560,7 +615,7 @@ void StateMachine::run(const bool &eeprom_read)
 				movement_done = true;
 				if (state == MachineState::OPENING) state = MachineState::OPEN;
 				if (state == MachineState::CLOSING) state = MachineState::CLOSE;
-				report_status();
+				report_status(); //Once the movement is finished, EEPROM will save the status in the indicated format
 			}
 		}
 	}

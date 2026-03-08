@@ -79,7 +79,6 @@ int main() {
 void welcome_text()
 {
 	cout << "Hello, program starts! ";
-	cout << "Please press SW0 and SW2 to calibrate." << endl;
 }
 /*
 int main()
@@ -103,6 +102,7 @@ int main()
 	sleep_ms(3000);
 
 	MQTTService mqtt(SSID, PASSWORD);
+
 	mqtt.connect_tcp();
 	mqtt.connect_mqtt();
 
@@ -112,11 +112,11 @@ int main()
 	mqtt.subscribe("garage/door/command");
 
 	welcome_text();
-	bool eeprom_read = false;
+	sm.read_eeprom();
 
 	while (true) {
 		mqtt.client_yield();
-		sm.run(eeprom_read);
+		sm.run();
 	}
 }
 /*

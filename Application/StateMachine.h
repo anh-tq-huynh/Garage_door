@@ -31,6 +31,8 @@ class StateMachine
 	public:
 		StateMachine(MQTTService& mqtt);
 
+		void waiting_screen() const;
+
 		//Machine state
 		static void print_states(const string &current_state,const string &error,const string &calib);
 		std::string get_door_state_string() const;
@@ -39,7 +41,7 @@ class StateMachine
 
 		//Machine operation
 		bool roll_door();
-		void run(const bool &eeprom_read);
+		void run();
 		bool update_state();
 		void blink_wait();
 		void sw1_toggle_state();
@@ -54,6 +56,8 @@ class StateMachine
 		void save_status(const string &state, const string &error, const string &calib);
 		void read_and_parse(uint8_t *array);
 		void get_latest_state(const string &state, const string &error, const string &calib);
+		bool read_eeprom();
+		bool get_total_steps();
 	private:
 		GarageDoor door;
 		Switches btns;
@@ -66,6 +70,7 @@ class StateMachine
 		bool new_cmd_available = false;
 		absolute_time_t next_blink = get_absolute_time();
 		bool movement_done = false;
+		bool eeprom_read_done = false;
 };
 
 

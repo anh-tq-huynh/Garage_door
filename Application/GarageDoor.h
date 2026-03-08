@@ -39,20 +39,27 @@ class GarageDoor
 
 		bool is_calibrated() const { return calibrated; };
 		bool        update(); // Call this periodically to update the state of the door
+		int get_total_step() const {return total_steps_calibration;}
+		int get_current_step() const {return current_step;}
 		bool execute();
 		std::string get_door_state_string() const;
 		std::string get_error_state_string() const;
 		std::string get_calibration_state_string() const;
 		std::string get_full_state_string() const;
-		void print_states() const;
 
 		bool is_error_state() const { return state == GarageDoorState::ERROR; }
 		void reset_state();
 		void free_encoder_events();
 		void set_state(DoorCommand cmd);
-		int get_last_dir() const;
-		void set_target_steps(int percentage);
+
+		void set_calibration(bool calib_done);
+
+		int             get_last_dir() const;
+		void            set_target_steps(int percentage);
 		GarageDoorState get_last_state() const;
+		void            set_current_steps(const int &current_steps);
+		void            set_total_steps(const int &total_steps);
+		string          get_steps_data() const;
 
 	private:
 		StepperMotor motor;
