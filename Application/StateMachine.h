@@ -29,72 +29,71 @@ enum class MachineState
 class StateMachine
 {
 	public:
-		StateMachine(MQTTService& mqtt);
+		explicit StateMachine(MQTTService& mqtt);
 
-		void waiting_screen() const;
+		//Machine operation
+		void run();
+		void get_latest_state(const string &state, const string &error, const string &calib);
+		void handle_mqtt_command(const char* payload);
+		bool read_eeprom();
 
-		//Machine state
+	private:
+		//Drivers
+		GarageDoor door;
+		LocalMemory memory;
+		MQTTService& mqtt;
+
+		//Hardware
+		Switches btns;
+		Leds leds;
+		mutable OLEDDisplay oled;
+
+		//Operational variables
+		MachineState state = MachineState::UNCALIBRATED;
+
+		DoorCommand cmd = DoorCommand::IDLE;
+		string cmd_str;
+		bool new_cmd_available = false;
+		bool executing_cmd = false;
+
+		absolute_time_t next_blink = get_absolute_time();
+		bool movement_done = false;
+		bool eeprom_read_done = false;
+
+		//Show states
 		static void print_states(const string &current_state,const string &error,const string &calib);
 		std::string get_door_state_string() const;
 		std::string get_error_state_string() const;
 		std::string get_calibration_state_string() const;
-
-		//Machine operation
-		bool roll_door();
-		void run();
-		bool update_state();
-
-		void initiate_cmd_var();
-
-		void dispatch_action_on_state();
-
-		void error_handling();
-
 		void display_calibration();
 
+		//State & action handling
+		bool update_state();
+		void dispatch_action_on_state();
+		void error_handling();
 		void execute_last_state_from_eeprom();
-
+		void initiate_cmd_var();
 		bool run_movement();
-
 		void report_if_finished(bool is_finished);
 
-		void blink_wait();
+		void uncalibrated_debug_print();
+
+		void report_calibration_result();
+
 		void sw1_toggle_state();
 
-		void transition_to(MachineState next_state);
-
-		void execute_new_state();
-
-		void execute_finised();
 
 		void report_status(); //Report status locally and via MQTT
 
 		//MQTT
-		void handle_mqtt_command(const char* payload);
 		void send_status() const;
 		void set_state_on_cmd();
 
 		//Local Memory
 		void save_status(const string &state, const string &error, const string &calib);
 		void read_and_parse(uint8_t *array);
-		void get_latest_state(const string &state, const string &error, const string &calib);
-		bool read_eeprom();
-		bool get_total_steps();
-	private:
-		GarageDoor door;
-		Switches btns;
-		Leds leds;
-		mutable OLEDDisplay oled;
-		MQTTService& mqtt;
-		DoorCommand cmd = DoorCommand::IDLE;
-		LocalMemory memory;
-		MachineState state = MachineState::UNCALIBRATED;
-		bool new_cmd_available = false;
-		bool executing_cmd = false;
-		string cmd_str;
-		absolute_time_t next_blink = get_absolute_time();
-		bool movement_done = false;
-		bool eeprom_read_done = false;
+
+
 };
 
 
