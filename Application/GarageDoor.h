@@ -36,21 +36,19 @@ class GarageDoor
 		void stop();
 		void operate();
 		void move_to_target();
+		bool execute();// Call this periodically to update the state of the door
 
 		bool is_calibrated() const { return calibrated; };
-		bool        update(); // Call this periodically to update the state of the door
 		int get_total_step() const {return total_steps_calibration;}
 		int get_current_step() const {return current_step;}
-		bool execute();
-		std::string get_door_state_string() const;
-		std::string get_error_state_string() const;
-		std::string get_calibration_state_string() const;
-		std::string get_full_state_string() const;
 
-		bool is_error_state() const { return state == GarageDoorState::ERROR; }
+
+		bool is_error_state() const { return is_error; }
 		void reset_state();
 		void free_encoder_events();
 		void set_state(DoorCommand cmd);
+
+		void set_error(bool is_error_state);
 
 		void set_calibration(bool calib_done);
 
@@ -73,6 +71,7 @@ class GarageDoor
 
 		GarageDoorState state                   = GarageDoorState::UNCALIBRATED;
 		bool            calibrated              = false;
+		bool is_error = false;
 		int             total_steps_calibration = 0;
 		int             current_step            = 0;
 		int             margin                  = 0;

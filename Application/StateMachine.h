@@ -43,8 +43,30 @@ class StateMachine
 		bool roll_door();
 		void run();
 		bool update_state();
+
+		void initiate_cmd_var();
+
+		void dispatch_action_on_state();
+
+		void error_handling();
+
+		void display_calibration();
+
+		void execute_last_state_from_eeprom();
+
+		bool run_movement();
+
+		void report_if_finished(bool is_finished);
+
 		void blink_wait();
 		void sw1_toggle_state();
+
+		void transition_to(MachineState next_state);
+
+		void execute_new_state();
+
+		void execute_finised();
+
 		void report_status(); //Report status locally and via MQTT
 
 		//MQTT
@@ -68,6 +90,8 @@ class StateMachine
 		LocalMemory memory;
 		MachineState state = MachineState::UNCALIBRATED;
 		bool new_cmd_available = false;
+		bool executing_cmd = false;
+		string cmd_str;
 		absolute_time_t next_blink = get_absolute_time();
 		bool movement_done = false;
 		bool eeprom_read_done = false;

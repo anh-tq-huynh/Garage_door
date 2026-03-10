@@ -176,7 +176,6 @@ bool LocalMemory:: read_an_entry (uint8_t *array) const
 	int read_size = static_cast<int>(strlen(temp_buffer)) + 3;
 
 	strcpy(reinterpret_cast<char *>(array), temp_buffer);
-	//cout << array << endl;
 	const bool read_is_valid = check_read(temp_buffer, read_size);
 	return read_is_valid;
 }
@@ -247,7 +246,6 @@ bool LocalMemory::get_steps(uint8_t *array, int &total_steps, int &current_steps
 	string::size_type total_steps_end = s_array.find(' ', total_steps_start);
 	size_t total_steps_size = total_steps_end - total_steps_start;
 	string s_total_steps = s_array.substr(total_steps_start, total_steps_size);
-	cout << "Step data: " << s_array << endl;;
 
 	if ((total_steps = convert_str_to_int(s_total_steps)) != -1) //only continue if success
 	{
@@ -289,27 +287,30 @@ MachineState LocalMemory::read_all_and_parse(uint8_t * array)
 		convert << '\0';
 		string s_array = convert.str();
 
-		if (s_array == "MOVING")
-		{
-			return MachineState::UNCALIBRATED;
-		}
-
 		size_t state_start{0};
 		string::size_type state_end = s_array.find('|', state_start);
-		size_t state_size = state_end - state_start;
-		string last_state = s_array.substr(state_start, state_size);
 
-		size_t error_start{state_end + 1};
-		size_t error_end = s_array.find('|',error_start);
-		size_t error_size = error_end - error_start;
-		string error = s_array.substr(error_start,error_size);
+		if (state_end != string::npos)
+		{
+			size_t state_size = state_end - state_start;
+			string last_state = s_array.substr(state_start, state_size);
 
-		size_t calib_start{error_end + 1};
-		size_t calib_end = s_array.find('\0',calib_start);
-		size_t calib_size = calib_end - calib_start;
-		string calib = s_array.substr(calib_start,calib_size);
+			size_t error_start{state_end + 1};
+			size_t error_end = s_array.find('|',error_start);
+			size_t error_size = error_end - error_start;
+			string error = s_array.substr(error_start,error_size);
 
-		return update_latest_state(last_state,error,calib);
+			size_t calib_start{error_end + 1};
+			size_t calib_end = s_array.find('\0',calib_start);
+			size_t calib_size = calib_end - calib_start;
+			string calib = s_array.substr(calib_start,calib_size);
+
+			return update_latest_state(last_state,error,calib);
+		}
+		else
+		{
+			return MachineState::IDLE;
+		}
 	}
 	return MachineState::IDLE;
 }
