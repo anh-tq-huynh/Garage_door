@@ -21,14 +21,6 @@ void LocalMemory::write_new_entry(const char *array)
 	int payload_size = static_cast<int>(strlen(array));
 	convert_str_to_uint(array, to_write, payload_size +1);
 	encapsulate_i2c_frame(to_write,payload_size);
-	//printf("To write %s\n", to_write);
-	/*
-	printf("To write to Memory %d: [", wr_mem_addr);
-	for (int i = 0; i < payload_size+3; i++)
-	{
-		printf("%c ",to_write[i]);
-	}
-	printf("]\n");*/
 
 	if (wr_mem_addr > MAX_START)
 	{
@@ -41,7 +33,6 @@ void LocalMemory::write_new_entry(const char *array)
 	{
 		cout << "Write failed, please check!" << endl;
 	}
-	//printf("Next write memory %d\n", wr_mem_addr);
 }
 
 void LocalMemory::write_addr_zero(const char *array) const

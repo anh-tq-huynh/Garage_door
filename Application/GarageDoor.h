@@ -30,34 +30,29 @@ class GarageDoor
 		GarageDoor(int motorA, int          motorB, int           motorC, int   motorD,
 		           int limitSwitchLeft, int limitSwitchRight, int encoderA, int encoderB);
 
+		//Operation of the door
 		void start_calibration();
 		void open();
 		void close();
 		void stop();
-		void operate();
 		void move_to_target();
 		bool execute();// Call this periodically to update the state of the door
 
+		//Get info
 		bool is_calibrated() const { return calibrated; };
-		int get_total_step() const {return total_steps_calibration;}
-		int get_current_step() const {return current_step;}
-
-
+		int  get_total_step() const { return total_steps_calibration; }
+		int  get_current_step() const { return current_step; }
 		bool is_error_state() const { return is_error; }
-		void reset_state();
-		void free_encoder_events();
-		void set_state(DoorCommand cmd);
-
-		void set_error(bool is_error_state);
-
-		void set_calibration(bool calib_done);
-
-		int             get_last_dir() const;
-		void            set_target_steps(int percentage);
+		int get_last_dir() const;
 		GarageDoorState get_last_state() const;
-		void            set_current_steps(const int &current_steps);
-		void            set_total_steps(const int &total_steps);
-		string          get_steps_data() const;
+		string get_steps_data() const;
+
+		//Set door data
+		void set_error(bool is_error_state);
+		void set_calibration(bool calib_done);
+		void set_target_steps(int percentage);
+		void set_current_steps(const int &current_steps);
+		void set_total_steps(const int &total_steps);
 
 	private:
 		StepperMotor motor;
@@ -81,8 +76,8 @@ class GarageDoor
 		static const int STUCK_THRESHOLD = 1000; // Number of steps to consider the door stuck
 
 		void drive_to_limit(LimitSwitch &limit, int direction);
-
 		bool check_if_stuck(bool changed);
+		void free_encoder_events();
 };
 
 #endif //GARAGE_DOOR_GARAGEDOOR_H

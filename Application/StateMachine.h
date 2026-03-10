@@ -75,11 +75,8 @@ class StateMachine
 		void initiate_cmd_var();
 		bool run_movement();
 		void report_if_finished(bool is_finished);
-
 		void uncalibrated_debug_print();
-
 		void report_calibration_result();
-
 		void sw1_toggle_state();
 
 

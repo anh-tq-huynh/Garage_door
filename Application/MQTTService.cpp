@@ -186,11 +186,6 @@ void MQTTService::client_yield()
 }
 
 
-int MQTTService::get_msg_count()
-{
-	return msg_count;
-}
-
 bool MQTTService::mqtt_is_connected() const
 {
 	return mqtt_is_connect;

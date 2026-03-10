@@ -3,9 +3,7 @@
 //
 
 #include "GarageDoor.h"
-
 #include <iostream>
-#include "pico/time.h"
 
 
 using namespace std;
@@ -16,7 +14,8 @@ GarageDoor::GarageDoor(int motorA, int motorB, int motorC, int motorD,
 	: motor(motorA, motorB, motorC, motorD),
 	  limitSwitchLeft(limitSwitchLeft),
 	  limitSwitchRight(limitSwitchRight),
-	  encoder(encoderA, encoderB)
+	  encoder(encoderA, encoderB),
+	  target()
 {
 }
 
@@ -227,6 +226,5 @@ int GarageDoor::get_last_dir() const
 {
 	return last_direction;
 }
-
 
 

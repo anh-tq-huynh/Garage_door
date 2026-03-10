@@ -15,14 +15,11 @@ class OLEDDisplay {
 public:
     OLEDDisplay();
     OLEDDisplay(const OLEDDisplay &) = delete;
+
     void show_status(const std::string &door_state, const std::string &error_state, const std::string &calib_state);
     void clear();
-		void show_sw2_sw0();
+    void show_sw2_sw0();
 
-    void waiting_screen();
-
-    void show_sw1();
-		void show_error();
 private:
     std::shared_ptr<PicoI2CBus> i2c_bus;
     std::shared_ptr<PicoI2CDevice> i2c_device;

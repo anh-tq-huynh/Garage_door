@@ -337,8 +337,9 @@ void StateMachine::set_state_on_cmd()
 
 bool StateMachine::update_state()
 {
-	if (btns.debounce_sw(2)) //2 switches are pressed
+	if (btns.both_btn_pressed()) //2 switches are pressed
 	{
+		while (btns.both_btn_pressed());
 		state = MachineState::CALIBRATE;
 		return true;
 	}

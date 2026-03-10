@@ -22,22 +22,6 @@ void Leds::leds_off()
 	leds_state = false;
 }
 
-bool Leds::blink_finished() const
-{
-	return blink_done;
-}
-
-
-
-void Leds::set_blink_finished()
-{
-	blink_done = true;
-}
-
-void Leds::set_blink_not_finished()
-{
-	blink_done = false;
-}
 
 bool Leds::leds_are_on() const
 {
