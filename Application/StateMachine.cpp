@@ -339,7 +339,7 @@ bool StateMachine::update_state()
 {
 	if (btns.both_btn_pressed()) //2 switches are pressed
 	{
-		while (btns.both_btn_pressed());
+		while (btns.both_btn_pressed()){};
 		state = MachineState::CALIBRATE;
 		return true;
 	}
