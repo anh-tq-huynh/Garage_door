@@ -44,7 +44,7 @@ std::string StateMachine::get_door_state_string() const {
 }
 
 std::string StateMachine::get_error_state_string() const {
-	if (state == MachineState::ERROR) return "Door stuck";
+	if (door.is_error_state()) return "Door stuck";
 	return "Normal";
 }
 
@@ -219,7 +219,7 @@ bool StateMachine::read_eeprom()
 {
 	uint8_t array[PAGE_SIZE];
 	MachineState latest_state = memory.read_all_and_parse(array);
-	if (latest_state == MachineState::IDLE)
+	if (latest_state == MachineState::IDLE || latest_state == MachineState::UNCALIBRATED)
 	{
 		eeprom_read_done = false;
 		cout << "No valid step data. Require re-calibration to proceed." <<endl;
@@ -234,7 +234,11 @@ bool StateMachine::read_eeprom()
 	{
 		door.set_total_steps(total_steps);
 		door.set_current_steps(current_steps);
-		door.set_calibration(true);
+		if (state != MachineState::ERROR)
+		{
+			door.set_calibration(true);
+		}
+
 		eeprom_read_done = true;
 		state = latest_state;
 		cout << "EEPROM read successfully. Total steps: " << total_steps << ". Current steps: " << current_steps <<endl;
@@ -411,6 +415,7 @@ void StateMachine::dispatch_action_on_state()
 		case MachineState::ERROR:
 			cout << "Error - Door is stuck";
 			door.set_error(true);
+			door.set_calibration(false);
 			break;
 
 		default:
@@ -471,6 +476,8 @@ void StateMachine::report_if_finished(bool is_finished)
 			{
 				state = MachineState::ERROR;
 				mqtt.cmd_response(false, true, true);
+				door.set_error(true);
+				door.set_calibration(false);
 			} else if (!door.is_error_state())
 			{
 				mqtt.cmd_response(true, false, false);

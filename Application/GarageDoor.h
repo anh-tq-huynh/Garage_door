@@ -73,7 +73,7 @@ class GarageDoor
 
 		int              last_direction  = 1;
 		int              stuck_counter   = 0;
-		static const int STUCK_THRESHOLD = 1000; // Number of steps to consider the door stuck
+		static const int STUCK_THRESHOLD = 500; // Number of steps to consider the door stuck
 
 		void drive_to_limit(LimitSwitch &limit, int direction);
 		bool check_if_stuck(bool changed);
