@@ -34,8 +34,8 @@ add_executable(${PROJECT_NAME}
         Hardware/LimitSwitch.h
         Application/GarageDoor.cpp
         Application/GarageDoor.h
-        Hardware/SwitchPair.cpp
-        Hardware/SwitchPair.h
+        Hardware/Switches.cpp
+        Hardware/Switches.h
         Application/StateMachine.cpp
         Application/StateMachine.h
         Hardware/Leds.cpp

@@ -24,37 +24,40 @@ MQTTService::MQTTService(const string &ssid, const string &pwd) : ssid(ssid), pw
 void MQTTService::connect_mqtt()
 {
 	int retry_count = 1;
+	if (!tcp_is_connect)
+	{
+		cout << "TCP is not connected" << endl;
+		return;
+	}
 	rc = client.connect(data);
 	while (rc != 0 && retry_count <= MAX_RETRIES)
 	{
-		cout << "Connect to MQTT failed. Attempt " << retry_count;
+		rc = client.connect(data);
+
+		cout << "Connect to MQTT failed. Attempt " << retry_count << endl;
 		retry_count++;
 		tight_loop_contents();
-		rc = client.connect(data);
 		sleep_ms(2);
 	}
 	if (retry_count > MAX_RETRIES)
 	{
-		cout << "MQTT connect failed after 5 attempts.";
+		cout << "MQTT connect failed after 5 attempts." << endl;
+		/*
 		while (true)
 		{
 			tight_loop_contents();
-		}
+		}*/
 	}
-	cout << "MQTT is connected." << endl;
-	mqtt_is_connect = true;
+	if (client.isConnected())
+	{
+		cout << "MQTT is connected." << endl;
+		mqtt_is_connect = true; // Success!
+	}
 }
 
 void MQTTService::connect_tcp()
 {
-	// 	// at serial rc from TCP connect is 0;
-	// if (rc != 1)
-	// {
-	// 	cout << "rc from TCP connect is " << rc << endl;
-	// }
-
 	int retry_count = 0;
-	// defined MAX_RETRIES to avoid magic number
 	while (retry_count < MAX_RETRIES)
 	{
 		// everycall to ipstack.connect will allocate new tcp struct;
@@ -65,8 +68,6 @@ void MQTTService::connect_tcp()
 		}
 
 		rc = ipstack.connect(broker_ip.c_str(), port);
-		// from lwip/err.h return 0 is ERR_OK, which means success.
-		// rc!=0 equals to error
 		if (rc == ERR_OK) {
 			cout << "TCP initiating connection..." << endl;
 			tcp_is_connect = true;
@@ -79,19 +80,8 @@ void MQTTService::connect_tcp()
 
 	cout << "TCP connect failed after " << MAX_RETRIES
 		 << " attempts. Check broker IP and Wi-Fi." << endl;
-	while (true)
-	{
-		tight_loop_contents();
-	}
 }
 
-
-
-// it seems this function hasn't been used at code
-// void MQTTService::set_qos(int qos)
-// {
-// 	mqtt_qos = qos;
-// }
 
 void messageArrived(const MQTT::MessageData &md)
 {
@@ -107,8 +97,6 @@ void messageArrived(const MQTT::MessageData &md)
 
 void MQTTService::subscribe(const char* topic)
 {
-	//rc = client.subscribe(topic, MQTT::QOS2, reinterpret_cast<MQTT::Client<IPStack, Countdown>::messageHandler>(messageArrived));
-	//rc = client.subscribe(topic, MQTT::QOS1, reinterpret_cast<MQTT::Client<IPStack, Countdown>::messageHandler>(messageArrived));
 	rc = client.subscribe(topic, MQTT::QOS1, static_message_arrived);
 	if (rc != 0)
 	{
@@ -119,6 +107,10 @@ void MQTTService::subscribe(const char* topic)
 
 void MQTTService::publish(const string &msg, const char* topic)
 {
+	if (!tcp_is_connect || !mqtt_is_connect)
+	{
+		return;
+	}
 	char buf[256];
 	strncpy(buf, msg.c_str(), sizeof(buf));
 	buf[sizeof(buf) - 1] = '\0';
@@ -155,13 +147,12 @@ void MQTTService::static_message_arrived(MQTT::MessageData& md) {
 	}
 }
 
-
-
-
-
-
 void MQTTService::send_message(const string &msg, const char* topic)
 {
+	if (!tcp_is_connect || !mqtt_is_connect)
+	{
+		return;
+	}
 	if (time_reached(mqtt_send))
 	{
 		mqtt_send = delayed_by_ms(mqtt_send, 2000);
@@ -185,90 +176,49 @@ void MQTTService::send_message(const string &msg, const char* topic)
 void MQTTService::client_yield()
 {
 	cyw43_arch_poll(); // called every loop to keep Wi-Fi stack alive
-	if (time_reached(yield_timer)) {
-		client.yield(1); // process incoming MQTT packets
-		yield_timer = make_timeout_time_ms(50);
-	}
-}
-
-
-
-/*
-
-
-void MQTTService::send_message(const string &msg, const char* topic)
-{
-	if (time_reached(mqtt_send))
+	if (tcp_is_connect && mqtt_is_connected())
 	{
-		mqtt_send = delayed_by_ms(mqtt_send, 2000);
-		if (!client.isConnected())
-		{
-			cout << "Not connected..." << endl;
-			rc = client.connect(data);
-			if (rc != 0)
-			{
-				cout << "rc from MQTT connect is " << rc << endl;
-				printf("rc from MQTT connect is z%d\n", rc);
-			}
-		}
-		char          buf[100];
-		//int           rc = 0;
-		MQTT::Message message{};
-		message.retained = false;
-		message.dup      = false;
-		strncpy(buf, msg.c_str(), sizeof(buf));
-		message.payload  = static_cast<void *>(buf);
-		switch (mqtt_qos)
-		{
-			case 0:
-				// Send and receive QoS 0 message
-				cout << "Msg nr: " << ++msg_count << "QoS 0 message" << endl;
-				cout << "\n";
-
-				message.qos        = MQTT::QOS0;
-				message.payloadlen = strlen(buf) + 1;
-				rc                 = client.publish(topic, message);
-
-				cout << "Publish rc = " << rc << endl;
-				++mqtt_qos;
-				break;
-			case 1:
-				// Send and receive QoS 1 message
-				cout << "Msg nr: " << ++msg_count << "; QoS 1 message" << endl;
-				cout << "\n";
-
-				message.qos        = MQTT::QOS1;
-				message.payloadlen = strlen(buf) + 1;
-				rc                 = client.publish(topic, message);
-
-				cout << "Publish rc = " << rc << endl;
-				++mqtt_qos;
-				break;
-
-			case 2:
-				// Send and receive QoS 2 message
-				cout << "Msg nr: " << ++msg_count << "; QoS 2 message" << endl;
-				cout << "\n";
-				sprintf(buf, "Msg nr: %d QoS 2 message", ++msg_count);
-				printf("%s\n", buf);
-				message.qos        = MQTT::QOS2;
-				message.payloadlen = strlen(buf) + 1;
-				rc                 = client.publish(topic, message);
-
-				cout << "Publish rc = " << rc << endl;
-				++mqtt_qos;
-				break;
-			default:
-				mqtt_qos = 0;
-				break;
+		if (time_reached(yield_timer)) {
+			client.yield(1); // process incoming MQTT packets
+			yield_timer = make_timeout_time_ms(50);
 		}
 	}
 }
-*/
 
-int MQTTService::get_msg_count()
+
+bool MQTTService::mqtt_is_connected() const
 {
-	return msg_count;
+	return mqtt_is_connect;
+}
+
+
+void MQTTService::cmd_response(const bool success, bool door_stuck, bool need_calibrated)
+{
+	if (success)
+	{
+		publish("Command executed successfully!","garage/door/response");
+	}
+	else
+	{
+		publish("Error - Failed to execute command.", "garage/door/response");
+	}
+	if (door_stuck)
+	{
+		publish ("Door is stuck.", "garage/door/response");
+	}
+	if (need_calibrated)
+	{
+		publish("Need calibrating before running!","garage/door/response");
+	}
+}
+
+void MQTTService::send_status(const string &door_state, const string &error, const string &calib)
+{
+	if (!mqtt_is_connected()) return;
+	publish(door_state + " | " +
+				 error + " | " +
+				 calib,
+				 "garage/door/status");
 }
 
 

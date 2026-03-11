@@ -15,19 +15,22 @@ class StateMachine;
 class MQTTService
 {
 	public:
+		//Establish connection
 		MQTTService(const string &ssid, const string &pwd);
 		void connect_mqtt();
 		void connect_tcp();
+		bool mqtt_is_connected() const;
+		void client_yield();
 
+		//MQTT interaction: send, subscribe, publish
 		void send_message(const string &msg, const char* topic);
 		void subscribe(const char* topic);
 		void publish(const string &msg, const char* topic);
 
-		void set_qos(int qos);
-		void client_yield();
-
-		void set_state_machine(StateMachine* sm);
-		int get_msg_count();
+		//Interaction with state machine
+		static void set_state_machine(StateMachine* sm);
+		void send_status(const string &door_state, const string &error, const string &calib);
+		void cmd_response(bool success, bool door_stuck, bool need_calibrated);
 
 	private:
 		string ssid;

@@ -8,34 +8,28 @@
 
 #include "pico/time.h"
 
-void Leds::leds_on() const
+void Leds::leds_on()
 {
 	led1.write(1);
 	led2.write(1);
+	leds_state = true;
 }
 
-void Leds::leds_off() const
+void Leds::leds_off()
 {
 	led1.write(0);
 	led2.write(0);
+	leds_state = false;
 }
 
-bool Leds::blink_finished() const
+
+bool Leds::leds_are_on() const
 {
-	return blink_done;
+	return leds_state;
 }
 
 
 
-void Leds::set_blink_finished()
-{
-	blink_done = true;
-}
-
-void Leds::set_blink_not_finished()
-{
-	blink_done = false;
-}
 
 
 
