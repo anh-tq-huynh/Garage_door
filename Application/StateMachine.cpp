@@ -37,7 +37,7 @@ std::string StateMachine::get_door_state_string() const {
 	int current = door.get_current_step();
 	int total = door.get_total_step();
 
-	if (current <= 0) return "Open";
+	if (current <= door.get_margin()) return "Open";
 	if (current >= total) return "Closed";
 
 	return "In between";
@@ -388,6 +388,7 @@ void StateMachine::dispatch_action_on_state()
 
 		case MachineState::CALIBRATE:
 			door.set_error(false);
+			memory.write_new_entry("MOVING");
 			door.start_calibration();
 			report_calibration_result();
 			break;

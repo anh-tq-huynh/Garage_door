@@ -44,8 +44,11 @@ class GarageDoor
 		int  get_current_step() const { return current_step; }
 		bool is_error_state() const { return is_error; }
 		int get_last_dir() const;
+
+		int get_margin() const;
+
 		GarageDoorState get_last_state() const;
-		string get_steps_data() const;
+		string          get_steps_data() const;
 
 		//Set door data
 		void set_error(bool is_error_state);

@@ -227,4 +227,9 @@ int GarageDoor::get_last_dir() const
 	return last_direction;
 }
 
+int GarageDoor::get_margin() const
+{
+	return margin;
+}
+
 
